@@ -1,0 +1,23 @@
+{
+    "name": "philipp/minichat",
+    "autoload": {
+        "psr-4": {
+            "Philipp\\Minichat\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Philipp Staender",
+            "email": "pstaender@mailbox.org"
+        }
+    ],
+    "require": {
+        "notrab/dumbo": "^1.2"
+    },
+    "config": {
+        "process-timeout": 0
+    },
+    "scripts": {
+        "start": "php -S localhost:8811 -t public public/index.php"
+    }
+}

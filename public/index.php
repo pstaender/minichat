@@ -1,0 +1,265 @@
+<?php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Dumbo\Context;
+use Dumbo\Dumbo;
+use Dumbo\Helpers\CORS;
+use Philipp\Minichat\Auth;
+use Philipp\Minichat\Config;
+use Philipp\Minichat\Providers\AnthropicProvider;
+use Philipp\Minichat\Providers\OpenAIProvider;
+use Philipp\Minichat\SessionStore;
+use Philipp\Minichat\Sse;
+use Philipp\Minichat\Usage;
+
+$rootDir = dirname(__DIR__);
+
+$config = new Config($rootDir . '/chat_config.json');
+$usage = new Usage($rootDir . '/storage/usage');
+$sessions = new SessionStore($rootDir . '/storage/sessions');
+
+function resolveProviderMessages(array $messages): array
+{
+    $result = [];
+
+    foreach ($messages as $m) {
+        $text = trim((string) ($m['text'] ?? ''));
+        if ($text === '') {
+            continue;
+        }
+
+        $result[] = ['role' => $m['role'] === 'assistant' ? 'assistant' : 'user', 'text' => $text];
+    }
+
+    return $result;
+}
+
+function resolveProvider(string $name): ?object
+{
+    return match ($name) {
+        'openai' => new OpenAIProvider(),
+        'anthropic' => new AnthropicProvider(),
+        default => null,
+    };
+}
+
+$app = new Dumbo();
+
+// Reflect the request origin and allow credentials so the cookie-based
+// session also works if the frontend isn't proxied behind the same origin.
+// In normal dev use (Vite proxying /api to this server) requests are
+// same-origin and this middleware never even engages.
+$app->use(CORS::cors([
+    'origin' => fn(string $origin) => $origin,
+    'credentials' => true,
+    'allow_headers' => ['Content-Type', 'Accept'],
+]));
+
+$requireAuth = function (Context $context, callable $next) use ($config) {
+    $userId = Auth::userId();
+    if (!$userId) {
+        return $context->json(['error' => 'Unauthorized.'], 401);
+    }
+
+    $user = $config->findById($userId);
+    if (!$user) {
+        Auth::logout();
+        return $context->json(['error' => 'Unauthorized.'], 401);
+    }
+
+    $context->set('user', $user);
+    return $next($context);
+};
+
+$app->post('/api/login', function (Context $context) use ($config, $usage) {
+    $body = $context->req->body();
+    $password = (string) ($body['password'] ?? '');
+    $email = isset($body['email']) && trim((string) $body['email']) !== '' ? trim((string) $body['email']) : null;
+
+    if ($password === '') {
+        return $context->json(['error' => 'Password is required.'], 400);
+    }
+
+    $user = $config->findByCredentials($email, $password);
+    if (!$user) {
+        return $context->json(['error' => 'Invalid credentials.'], 401);
+    }
+
+    Auth::login($user['id']);
+
+    return $context->json(['user' => $config->publicUser($user), 'usage' => $usage->get($user['id'])]);
+});
+
+$app->post('/api/logout', function (Context $context) {
+    Auth::logout();
+    return $context->json(['ok' => true]);
+}, [$requireAuth]);
+
+$app->get('/api/me', function (Context $context) use ($config, $usage) {
+    $user = $context->get('user');
+    return $context->json(['user' => $config->publicUser($user), 'usage' => $usage->get($user['id'])]);
+}, [$requireAuth]);
+
+$app->get('/api/sessions', function (Context $context) use ($sessions) {
+    $user = $context->get('user');
+    return $context->json(['sessions' => $sessions->list($user['id'])]);
+}, [$requireAuth]);
+
+$app->post('/api/sessions', function (Context $context) use ($sessions) {
+    $user = $context->get('user');
+    $body = $context->req->body();
+
+    $model = (string) ($body['model'] ?? ($user['model'][0] ?? ''));
+    if ($model === '' || !in_array($model, $user['model'], true)) {
+        return $context->json(['error' => 'Invalid model.'], 400);
+    }
+
+    $title = trim((string) ($body['title'] ?? '')) ?: 'New chat';
+    $session = $sessions->create($user['id'], $user['provider'], $model, $title);
+
+    return $context->json(['session' => $session], 201);
+}, [$requireAuth]);
+
+$app->get('/api/sessions/:id', function (Context $context) use ($sessions) {
+    $user = $context->get('user');
+    $session = $sessions->get($user['id'], (string) $context->req->param('id'));
+
+    if (!$session) {
+        return $context->json(['error' => 'Session not found.'], 404);
+    }
+
+    return $context->json(['session' => $session]);
+}, [$requireAuth]);
+
+$app->patch('/api/sessions/:id', function (Context $context) use ($sessions) {
+    $user = $context->get('user');
+    $body = $context->req->body();
+    $id = (string) $context->req->param('id');
+
+    $updated = $sessions->update($user['id'], $id, function (array $s) use ($body) {
+        if (isset($body['title']) && trim((string) $body['title']) !== '') {
+            $s['title'] = trim((string) $body['title']);
+        }
+        return $s;
+    });
+
+    if (!$updated) {
+        return $context->json(['error' => 'Session not found.'], 404);
+    }
+
+    return $context->json(['session' => $updated]);
+}, [$requireAuth]);
+
+$app->delete('/api/sessions/:id', function (Context $context) use ($sessions) {
+    $user = $context->get('user');
+    $sessions->delete($user['id'], (string) $context->req->param('id'));
+    return $context->json(['ok' => true]);
+}, [$requireAuth]);
+
+$app->post('/api/chat/stream', function (Context $context) use ($sessions, $usage) {
+    $user = $context->get('user');
+    $userId = $user['id'];
+    $body = $context->req->body();
+
+    $sessionId = (string) ($body['session_id'] ?? '');
+    $text = trim((string) ($body['text'] ?? ''));
+
+    if ($sessionId === '') {
+        return $context->json(['error' => 'session_id is required.'], 400);
+    }
+    if ($text === '') {
+        return $context->json(['error' => 'Message is empty.'], 400);
+    }
+
+    $session = $sessions->get($userId, $sessionId);
+    if (!$session) {
+        return $context->json(['error' => 'Session not found.'], 404);
+    }
+
+    $limitError = $usage->checkLimit($user, $userId);
+    if ($limitError) {
+        return $context->json(['error' => $limitError['message'], 'code' => $limitError['code']], 429);
+    }
+
+    $provider = resolveProvider($session['provider']);
+    if (!$provider) {
+        return $context->json(['error' => 'Unsupported provider configured for this session.'], 400);
+    }
+
+    $userMessage = [
+        'id' => bin2hex(random_bytes(6)),
+        'role' => 'user',
+        'text' => $text,
+        'created_at' => gmdate('c'),
+    ];
+
+    $isFirstMessage = empty($session['messages']);
+    $providerMessages = resolveProviderMessages(array_merge($session['messages'] ?? [], [$userMessage]));
+
+    // Release the session file lock before the (potentially long) HTTP
+    // stream so other tabs/requests for this user aren't blocked on it.
+    Auth::close();
+    Sse::start();
+
+    $fullText = '';
+    $failed = false;
+    $errorMessage = null;
+    $usageResult = ['input_tokens' => 0, 'output_tokens' => 0];
+
+    try {
+        $usageResult = $provider->stream([
+            'apiKey' => $user['API_KEY'],
+            'model' => $session['model'],
+            'messages' => $providerMessages,
+            'onDelta' => function (string $chunk) use (&$fullText) {
+                $fullText .= $chunk;
+                Sse::emit('delta', ['text' => $chunk]);
+            },
+        ]);
+    } catch (\Throwable $e) {
+        $failed = true;
+        $errorMessage = $e->getMessage();
+    }
+
+    $assistantMessage = [
+        'id' => bin2hex(random_bytes(6)),
+        'role' => 'assistant',
+        'text' => $fullText,
+        'created_at' => gmdate('c'),
+        'error' => $failed ? $errorMessage : null,
+    ];
+
+    $updated = $sessions->update($userId, $sessionId, function (array $s) use (
+        $userMessage,
+        $assistantMessage,
+        $isFirstMessage,
+        $text
+    ) {
+        $s['messages'] = $s['messages'] ?? [];
+        $s['messages'][] = $userMessage;
+        $s['messages'][] = $assistantMessage;
+
+        if ($isFirstMessage && (empty($s['title']) || $s['title'] === 'New chat')) {
+            $s['title'] = mb_strlen($text) > 60 ? mb_substr($text, 0, 57) . '...' : $text;
+        }
+
+        return $s;
+    });
+
+    $newUsage = $usage->add($userId, $usageResult['input_tokens'], $usageResult['output_tokens']);
+
+    if ($failed) {
+        Sse::emit('error', ['message' => $errorMessage, 'usage' => $newUsage]);
+    } else {
+        Sse::emit('done', [
+            'usage' => $newUsage,
+            'title' => $updated['title'] ?? $session['title'],
+            'message_id' => $assistantMessage['id'],
+        ]);
+    }
+
+    exit;
+}, [$requireAuth]);
+
+$app->run();

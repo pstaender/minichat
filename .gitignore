@@ -1,0 +1,17 @@
+/vendor/
+/composer.lock
+
+# per-user runtime data — never commit real chat_config.json (contains API keys)
+/chat_config.json
+/storage/usage/*.json
+/storage/sessions/*.json
+!/storage/usage/.gitkeep
+!/storage/sessions/.gitkeep
+
+# frontend
+
+minichat/dist/
+minichat/.vite/
+
+.DS_Store
+node_modules/
