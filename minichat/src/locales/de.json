@@ -72,7 +72,12 @@
   },
   "message": {
     "you": "Du",
-    "assistant": "KI"
+    "assistant": "KI",
+    "copyMarkdown": "Markdown",
+    "copyMarkdownLabel": "Antwort als Markdown kopieren",
+    "copyHtml": "HTML",
+    "copyHtmlLabel": "Antwort als HTML kopieren",
+    "copied": "Kopiert!"
   },
   "error": {
     "loginFailed": "Anmeldung fehlgeschlagen.",

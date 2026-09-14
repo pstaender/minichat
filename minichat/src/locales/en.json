@@ -72,7 +72,12 @@
   },
   "message": {
     "you": "You",
-    "assistant": "AI"
+    "assistant": "AI",
+    "copyMarkdown": "Markdown",
+    "copyMarkdownLabel": "Copy response as Markdown",
+    "copyHtml": "HTML",
+    "copyHtmlLabel": "Copy response as HTML",
+    "copied": "Copied!"
   },
   "error": {
     "loginFailed": "Login failed.",

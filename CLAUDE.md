@@ -38,6 +38,11 @@ frontend.
   over-limit returns `429` and the UI disables the composer.
 - Multiple chats per user, rename/delete, paste HTML→Markdown (Turndown),
   markdown rendering (`marked` + `DOMPurify`).
+- Each assistant reply has copy buttons (`Message.svelte`): "Markdown"
+  copies the raw source via `writeText`; "HTML" writes both `text/html`
+  (rendered via `renderMarkdown`) and a `text/plain` fallback with
+  `navigator.clipboard.write([new ClipboardItem(...)])`, so rich targets
+  (email/docs) keep formatting and plain-text targets get the Markdown.
 - Model can be changed per-chat any time via `PATCH /api/sessions/:id`
   `{model}` (shares `resolveModel()` with session creation, in
   `public/index.php`) — the ChatView header shows a `<select>` instead of

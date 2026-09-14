@@ -1,10 +1,53 @@
 <script>
-  import { renderMarkdown } from '../lib/markdown.js'
+  import IconClipboard from '~icons/line-md/clipboard'
+  import IconClipboardCheck from '~icons/line-md/clipboard-check'
+  import IconDocumentCode from '~icons/line-md/document-code'
   import { _ } from '../lib/i18n.js'
+  import { renderMarkdown } from '../lib/markdown.js'
 
   let { message } = $props()
 
   const isUser = $derived(message.role === 'user')
+
+  let copied = $state(null) // null | 'markdown' | 'html'
+  let copiedTimer
+
+  function flashCopied(kind) {
+    copied = kind
+    clearTimeout(copiedTimer)
+    copiedTimer = setTimeout(() => (copied = null), 1500)
+  }
+
+  async function copyMarkdown() {
+    try {
+      await navigator.clipboard.writeText(message.text)
+      flashCopied('markdown')
+    } catch {
+      // clipboard unavailable (permissions, insecure context) — nothing we can do
+    }
+  }
+
+  async function copyHtml() {
+    const html = renderMarkdown(message.text)
+    try {
+      // Writes both flavors so rich targets (email, docs) get formatting
+      // and plain-text targets fall back to the Markdown source.
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([message.text], { type: 'text/plain' }),
+        }),
+      ])
+      flashCopied('html')
+    } catch {
+      try {
+        await navigator.clipboard.writeText(html)
+        flashCopied('html')
+      } catch {
+        // clipboard truly unavailable — give up silently
+      }
+    }
+  }
 </script>
 
 <div class="flex gap-3 px-4 py-5 {isUser ? '' : 'bg-neutral-50 dark:bg-neutral-900/60'}">
@@ -37,6 +80,39 @@
       <p class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
         {message.error}
       </p>
+    {/if}
+
+    {#if !isUser && message.text}
+      <div class="mt-2 flex items-center gap-1">
+        <button
+          class="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+          onclick={copyMarkdown}
+          title={$_('message.copyMarkdownLabel')}
+          aria-label={$_('message.copyMarkdownLabel')}
+        >
+          {#if copied === 'markdown'}
+            <IconClipboardCheck class="h-3.5 w-3.5" />
+            <span>{$_('message.copied')}</span>
+          {:else}
+            <IconClipboard class="h-3.5 w-3.5" />
+            <span>{$_('message.copyMarkdown')}</span>
+          {/if}
+        </button>
+        <button
+          class="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+          onclick={copyHtml}
+          title={$_('message.copyHtmlLabel')}
+          aria-label={$_('message.copyHtmlLabel')}
+        >
+          {#if copied === 'html'}
+            <IconClipboardCheck class="h-3.5 w-3.5" />
+            <span>{$_('message.copied')}</span>
+          {:else}
+            <IconDocumentCode class="h-3.5 w-3.5" />
+            <span>{$_('message.copyHtml')}</span>
+          {/if}
+        </button>
+      </div>
     {/if}
   </div>
 </div>
