@@ -1,4 +1,7 @@
 {
+  "common": {
+    "dismiss": "Dismiss"
+  },
   "app": {
     "loading": "Loading…"
   },

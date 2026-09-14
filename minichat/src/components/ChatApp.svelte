@@ -1,7 +1,8 @@
 <script>
   import { onMount } from 'svelte'
+  import IconClose from '~icons/line-md/close'
   import { api, streamChat } from '../lib/api.js'
-  import { apiErrorMessage } from '../lib/i18n.js'
+  import { _, apiErrorMessage } from '../lib/i18n.js'
   import { auth } from '../lib/store.svelte.js'
   import ChatView from './ChatView.svelte'
   import RoleEditor from './RoleEditor.svelte'
@@ -15,6 +16,16 @@
   let sending = $state(false)
   let blocked = $state('')
   let sidebarOpen = $state(false)
+  let actionError = $state('')
+  let actionErrorTimer
+
+  // For failures outside the send-message flow (creating/switching a chat,
+  // renaming, roles, ...) which otherwise had nowhere to show up in the UI.
+  function showActionError(e) {
+    actionError = apiErrorMessage(e)
+    clearTimeout(actionErrorTimer)
+    actionErrorTimer = setTimeout(() => (actionError = ''), 6000)
+  }
 
   const grouped = $derived.by(() => {
     const byRole = {}
@@ -41,18 +52,26 @@
   async function selectSession(id) {
     sidebarOpen = false
     blocked = ''
-    const data = await api.getSession(id)
-    activeSession = data.session
+    try {
+      const data = await api.getSession(id)
+      activeSession = data.session
+    } catch (e) {
+      showActionError(e)
+    }
   }
 
   async function newChat(roleId = null) {
-    const model = auth.user.models[0]
-    const data = await api.createSession(model, undefined, roleId)
-    sessions = [{ ...data.session, message_count: 0 }, ...sessions]
-    activeSession = data.session
-    blocked = ''
-    sidebarOpen = false
-    if (roleId) expandedRoles[roleId] = true
+    try {
+      const model = auth.user.models[0]
+      const data = await api.createSession(model, undefined, roleId)
+      sessions = [{ ...data.session, message_count: 0 }, ...sessions]
+      activeSession = data.session
+      blocked = ''
+      sidebarOpen = false
+      if (roleId) expandedRoles[roleId] = true
+    } catch (e) {
+      showActionError(e)
+    }
   }
 
   function toggleRole(id) {
@@ -68,45 +87,65 @@
   }
 
   async function saveRole(values) {
-    if (editingRole.id) {
-      const data = await api.updateRole(editingRole.id, values)
-      roles = roles.map((r) => (r.id === editingRole.id ? data.role : r))
-    } else {
-      const data = await api.createRole(values.name, values.prompt)
-      roles = [...roles, data.role]
-      expandedRoles[data.role.id] = true
+    try {
+      if (editingRole.id) {
+        const data = await api.updateRole(editingRole.id, values)
+        roles = roles.map((r) => (r.id === editingRole.id ? data.role : r))
+      } else {
+        const data = await api.createRole(values.name, values.prompt)
+        roles = [...roles, data.role]
+        expandedRoles[data.role.id] = true
+      }
+      editingRole = null
+    } catch (e) {
+      showActionError(e)
     }
-    editingRole = null
   }
 
   async function deleteRole(id) {
-    await api.deleteRole(id)
-    roles = roles.filter((r) => r.id !== id)
+    try {
+      await api.deleteRole(id)
+      roles = roles.filter((r) => r.id !== id)
+    } catch (e) {
+      showActionError(e)
+    }
   }
 
   async function renameChat(id, title) {
-    await api.updateSession(id, { title })
-    sessions = sessions.map((s) => (s.id === id ? { ...s, title } : s))
-    if (activeSession?.id === id) activeSession.title = title
+    try {
+      await api.updateSession(id, { title })
+      sessions = sessions.map((s) => (s.id === id ? { ...s, title } : s))
+      if (activeSession?.id === id) activeSession.title = title
+    } catch (e) {
+      showActionError(e)
+    }
   }
 
   async function changeSessionModel(model) {
     if (!activeSession) return
-    const data = await api.updateSession(activeSession.id, { model })
-    activeSession.provider = data.session.provider
-    activeSession.model = data.session.model
-    sessions = sessions.map((s) =>
-      s.id === activeSession.id ? { ...s, provider: data.session.provider, model: data.session.model } : s
-    )
+    try {
+      const data = await api.updateSession(activeSession.id, { model })
+      activeSession.provider = data.session.provider
+      activeSession.model = data.session.model
+      sessions = sessions.map((s) =>
+        s.id === activeSession.id ? { ...s, provider: data.session.provider, model: data.session.model } : s
+      )
+    } catch (e) {
+      showActionError(e)
+    }
   }
 
   async function deleteChat(id) {
-    const wasActive = activeSession?.id === id
-    await api.deleteSession(id)
-    sessions = sessions.filter((s) => s.id !== id)
-    if (wasActive) {
-      activeSession = null
-      if (sessions.length) await selectSession(sessions[0].id)
+    try {
+      const wasActive = activeSession?.id === id
+      await api.deleteSession(id)
+      sessions = sessions.filter((s) => s.id !== id)
+      if (wasActive) {
+        activeSession = null
+        if (sessions.length) await selectSession(sessions[0].id)
+      }
+    } catch (e) {
+      showActionError(e)
     }
   }
 
@@ -191,4 +230,19 @@
 
 {#if editingRole}
   <RoleEditor role={editingRole} onSave={saveRole} onClose={() => (editingRole = null)} />
+{/if}
+
+{#if actionError}
+  <div
+    class="fixed top-3 left-1/2 z-50 flex max-w-md -translate-x-1/2 items-start gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm text-white shadow-lg"
+  >
+    <span class="min-w-0">{actionError}</span>
+    <button
+      class="shrink-0 opacity-80 hover:opacity-100"
+      onclick={() => (actionError = '')}
+      aria-label={$_('common.dismiss')}
+    >
+      <IconClose class="h-4 w-4" />
+    </button>
+  </div>
 {/if}
