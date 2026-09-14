@@ -65,7 +65,7 @@ export async function streamChat({ sessionId, text }, { onDelta, onDone, onError
       body: JSON.stringify({ session_id: sessionId, text }),
     })
   } catch {
-    onError?.('Network error. Is the server running?')
+    onError?.('Network error. Is the server running?', { code: 'network_error' })
     return
   }
 

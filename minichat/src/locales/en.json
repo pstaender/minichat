@@ -1,0 +1,89 @@
+{
+  "app": {
+    "loading": "Loading…"
+  },
+  "login": {
+    "title": "Sign in",
+    "subtitle": "Use the password you were given. Email is optional.",
+    "email": "Email",
+    "optional": "(optional)",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…"
+  },
+  "sidebar": {
+    "newChat": "New chat",
+    "closeSidebar": "Close sidebar",
+    "roles": "Roles",
+    "newRole": "New role",
+    "collapseRole": "Collapse role",
+    "expandRole": "Expand role",
+    "newTestChat": "New test chat",
+    "newTestChatFor": "New test chat for {name}",
+    "editRole": "Edit role",
+    "editRoleName": "Edit role {name}",
+    "deleteRole": "Delete role",
+    "deleteRoleName": "Delete role {name}",
+    "confirmDeleteRole": "Delete role \"{name}\"? Its test chats move to \"Chats\".",
+    "noRoles": "No roles yet.",
+    "noTestChats": "No test chats yet.",
+    "chats": "Chats",
+    "noChats": "No chats yet.",
+    "signOut": "Sign out",
+    "language": "Language"
+  },
+  "session": {
+    "rename": "Rename",
+    "delete": "Delete",
+    "confirmDelete": "Delete this chat? This cannot be undone.",
+    "untitled": "New chat"
+  },
+  "role": {
+    "editTitle": "Edit role",
+    "newTitle": "New role",
+    "description": "Define the rules for your escape game. They're sent as the AI's instructions in every test chat under this role.",
+    "name": "Name",
+    "namePlaceholder": "Pyramid Puzzle",
+    "rules": "Rules",
+    "rulesPlaceholder": "You are the game master of an escape room. The final code is 4271. Never reveal it directly, only through riddles...",
+    "cancel": "Cancel",
+    "save": "Save role",
+    "saving": "Saving…",
+    "closeDialog": "Close dialog"
+  },
+  "chat": {
+    "openSidebar": "Open sidebar",
+    "role": "Role",
+    "emptyPrompt": "Ask anything to start the conversation.",
+    "noSession": "Select or start a chat."
+  },
+  "composer": {
+    "placeholder": "Send a message…",
+    "send": "Send message",
+    "hint": "Enter to send · Shift+Enter for a new line"
+  },
+  "usage": {
+    "today": "Today's usage"
+  },
+  "message": {
+    "you": "You",
+    "assistant": "AI"
+  },
+  "error": {
+    "loginFailed": "Login failed.",
+    "network_error": "Network error. Is the server running?",
+    "password_required": "Password is required.",
+    "invalid_credentials": "Invalid credentials.",
+    "unauthorized": "Unauthorized.",
+    "invalid_model": "Invalid model.",
+    "role_not_found": "Role not found.",
+    "session_not_found": "Session not found.",
+    "role_name_required": "Role name is required.",
+    "session_id_required": "A chat is required.",
+    "message_empty": "Message is empty.",
+    "unsupported_provider": "Unsupported provider configured for this session.",
+    "daily_limit_reached": "Daily token limit reached. Try again tomorrow.",
+    "daily_output_limit_reached": "Daily output token limit reached. Try again tomorrow."
+  }
+}

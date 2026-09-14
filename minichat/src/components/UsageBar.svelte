@@ -1,4 +1,6 @@
 <script>
+  import { _ } from '../lib/i18n.js'
+
   let { usage, limit } = $props()
 
   const used = $derived((usage?.input_tokens ?? 0) + (usage?.output_tokens ?? 0))
@@ -9,7 +11,7 @@
 {#if limit}
   <div class="px-3 py-2">
     <div class="mb-1 flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400">
-      <span>Today's usage</span>
+      <span>{$_('usage.today')}</span>
       <span>{used.toLocaleString()} / {limit.toLocaleString()}</span>
     </div>
     <div class="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">

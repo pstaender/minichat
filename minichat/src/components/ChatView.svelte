@@ -1,6 +1,7 @@
 <script>
   import { tick } from 'svelte'
   import IconMenu from '~icons/line-md/menu'
+  import { _ } from '../lib/i18n.js'
   import { auth } from '../lib/store.svelte.js'
   import Composer from './Composer.svelte'
   import Message from './Message.svelte'
@@ -30,16 +31,16 @@
     <button
       class="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 md:hidden dark:text-neutral-400 dark:hover:bg-neutral-800"
       onclick={onToggleSidebar}
-      aria-label="Open sidebar"
+      aria-label={$_('chat.openSidebar')}
     >
       <IconMenu class="h-5 w-5" />
     </button>
     <div class="min-w-0 flex-1">
       <p class="truncate text-sm font-medium text-neutral-800 dark:text-neutral-100">
-        {session?.title || 'New chat'}
+        {session?.title || $_('session.untitled')}
       </p>
       <p class="truncate text-xs text-neutral-400 dark:text-neutral-500">
-        {#if role}Role: {role.name} · {/if}{auth.user?.provider} · {session?.model}
+        {#if role}{$_('chat.role')}: {role.name} · {/if}{auth.user?.provider} · {session?.model}
       </p>
     </div>
   </header>
@@ -48,7 +49,7 @@
     {#if session}
       {#if session.messages.length === 0}
         <div class="flex h-full items-center justify-center px-4 text-center text-sm text-neutral-400 dark:text-neutral-500">
-          Ask anything to start the conversation.
+          {$_('chat.emptyPrompt')}
         </div>
       {:else}
         <div class="mx-auto max-w-3xl divide-y divide-neutral-100 dark:divide-neutral-900">
@@ -59,7 +60,7 @@
       {/if}
     {:else}
       <div class="flex h-full items-center justify-center text-sm text-neutral-400 dark:text-neutral-500">
-        Select or start a chat.
+        {$_('chat.noSession')}
       </div>
     {/if}
   </div>

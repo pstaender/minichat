@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte'
   import { api, streamChat } from '../lib/api.js'
+  import { apiErrorMessage } from '../lib/i18n.js'
   import { auth } from '../lib/store.svelte.js'
   import ChatView from './ChatView.svelte'
   import RoleEditor from './RoleEditor.svelte'
@@ -136,10 +137,11 @@
         },
         onError: (message, payload) => {
           sending = false
-          session.messages[assistantIndex].error = message
+          const localized = apiErrorMessage({ message, code: payload?.code })
+          session.messages[assistantIndex].error = localized
           if (payload?.usage) auth.usage = payload.usage
           if (payload?.code === 'daily_limit_reached' || payload?.code === 'daily_output_limit_reached') {
-            blocked = message
+            blocked = localized
           }
         },
       }

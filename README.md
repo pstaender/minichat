@@ -120,6 +120,16 @@ Not applicable — this build has no file upload feature.
   `unplugin-icons` — imported per-icon (e.g. `~icons/line-md/plus`) and
   compiled to Svelte components at build time, so there's no runtime fetch
   from Iconify's API and no icon font.
+- **Language**: English by default, German as the second language, via
+  [svelte-i18n](https://github.com/kaisermann/svelte-i18n). The UI
+  language is detected from the browser's `navigator.language` on first
+  visit, then remembered in `localStorage` once changed with the EN/DE
+  toggle (in the sidebar, and on the login screen). Translations live in
+  `minichat/src/locales/{en,de}.json`; the bootstrap in
+  `minichat/src/lib/i18n.js` also translates known backend error codes
+  (e.g. the daily-limit message) via `apiErrorMessage()` — errors without
+  a `code` (like a raw provider API error) are shown as-is since they
+  can't be pre-translated.
 
 ## Project layout
 
@@ -135,7 +145,8 @@ src/                      PHP backend (PSR-4: Philipp\Minichat\)
   Providers/              OpenAI / Anthropic streaming clients
 storage/                  Runtime JSON data (git-ignored, except .gitkeep)
 minichat/                 Vite + Svelte 5 + Tailwind frontend
-  src/lib/                api client, reactive auth store, markdown, paste
+  src/lib/                api client, reactive auth store, markdown, paste, i18n
+  src/locales/            en.json, de.json translation dictionaries
   src/components/         LoginView, Sidebar, SessionRow, RoleEditor,
-                          ChatView, Message, Composer
+                          ChatView, Message, Composer, LanguageToggle
 ```

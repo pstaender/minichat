@@ -1,6 +1,7 @@
 <script>
   import IconEdit from '~icons/line-md/edit'
   import IconTrash from '~icons/line-md/trash'
+  import { _ } from '../lib/i18n.js'
 
   let { session, active, onSelect, onRename, onDelete } = $props()
 
@@ -18,7 +19,7 @@
   }
 
   function confirmDelete() {
-    if (confirm('Delete this chat? This cannot be undone.')) {
+    if (confirm($_('session.confirmDelete'))) {
       onDelete(session.id)
     }
   }
@@ -51,21 +52,21 @@
       onclick={() => onSelect(session.id)}
       title={session.title}
     >
-      {session.title || 'New chat'}
+      {session.title || $_('session.untitled')}
     </button>
     <button
       class="invisible flex shrink-0 items-center justify-center rounded p-1 text-neutral-400 hover:bg-neutral-300 hover:text-neutral-700 group-hover:visible dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
       onclick={startRename}
-      title="Rename"
-      aria-label="Rename chat"
+      title={$_('session.rename')}
+      aria-label={$_('session.rename')}
     >
       <IconEdit class="h-4 w-4" />
     </button>
     <button
       class="invisible flex shrink-0 items-center justify-center rounded p-1 text-neutral-400 hover:bg-neutral-300 hover:text-red-600 group-hover:visible dark:hover:bg-neutral-700 dark:hover:text-red-400"
       onclick={confirmDelete}
-      title="Delete"
-      aria-label="Delete chat"
+      title={$_('session.delete')}
+      aria-label={$_('session.delete')}
     >
       <IconTrash class="h-4 w-4" />
     </button>

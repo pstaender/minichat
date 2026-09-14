@@ -1,0 +1,89 @@
+{
+  "app": {
+    "loading": "Lädt…"
+  },
+  "login": {
+    "title": "Anmelden",
+    "subtitle": "Verwende das Passwort, das du erhalten hast. Die E-Mail ist optional.",
+    "email": "E-Mail",
+    "optional": "(optional)",
+    "emailPlaceholder": "du@beispiel.de",
+    "password": "Passwort",
+    "signIn": "Anmelden",
+    "signingIn": "Anmeldung läuft…"
+  },
+  "sidebar": {
+    "newChat": "Neuer Chat",
+    "closeSidebar": "Seitenleiste schließen",
+    "roles": "Rollen",
+    "newRole": "Neue Rolle",
+    "collapseRole": "Rolle einklappen",
+    "expandRole": "Rolle ausklappen",
+    "newTestChat": "Neuer Testchat",
+    "newTestChatFor": "Neuer Testchat für {name}",
+    "editRole": "Rolle bearbeiten",
+    "editRoleName": "Rolle {name} bearbeiten",
+    "deleteRole": "Rolle löschen",
+    "deleteRoleName": "Rolle {name} löschen",
+    "confirmDeleteRole": "Rolle „{name}“ löschen? Ihre Testchats werden nach „Chats“ verschoben.",
+    "noRoles": "Noch keine Rollen.",
+    "noTestChats": "Noch keine Testchats.",
+    "chats": "Chats",
+    "noChats": "Noch keine Chats.",
+    "signOut": "Abmelden",
+    "language": "Sprache"
+  },
+  "session": {
+    "rename": "Umbenennen",
+    "delete": "Löschen",
+    "confirmDelete": "Diesen Chat löschen? Das kann nicht rückgängig gemacht werden.",
+    "untitled": "Neuer Chat"
+  },
+  "role": {
+    "editTitle": "Rolle bearbeiten",
+    "newTitle": "Neue Rolle",
+    "description": "Lege die Regeln für dein Escape-Game fest. Sie werden der KI als Anweisung in jedem Testchat dieser Rolle mitgegeben.",
+    "name": "Name",
+    "namePlaceholder": "Pyramiden-Rätsel",
+    "rules": "Regeln",
+    "rulesPlaceholder": "Du bist der Spielleiter eines Escape Rooms. Der finale Code lautet 4271. Verrate ihn nie direkt, nur durch Rätsel...",
+    "cancel": "Abbrechen",
+    "save": "Rolle speichern",
+    "saving": "Speichern…",
+    "closeDialog": "Dialog schließen"
+  },
+  "chat": {
+    "openSidebar": "Seitenleiste öffnen",
+    "role": "Rolle",
+    "emptyPrompt": "Stelle eine Frage, um die Unterhaltung zu beginnen.",
+    "noSession": "Wähle einen Chat aus oder starte einen neuen."
+  },
+  "composer": {
+    "placeholder": "Nachricht schreiben…",
+    "send": "Nachricht senden",
+    "hint": "Enter zum Senden · Umschalt+Enter für eine neue Zeile"
+  },
+  "usage": {
+    "today": "Heutige Nutzung"
+  },
+  "message": {
+    "you": "Du",
+    "assistant": "KI"
+  },
+  "error": {
+    "loginFailed": "Anmeldung fehlgeschlagen.",
+    "network_error": "Netzwerkfehler. Läuft der Server?",
+    "password_required": "Passwort ist erforderlich.",
+    "invalid_credentials": "Ungültige Zugangsdaten.",
+    "unauthorized": "Nicht autorisiert.",
+    "invalid_model": "Ungültiges Modell.",
+    "role_not_found": "Rolle nicht gefunden.",
+    "session_not_found": "Chat nicht gefunden.",
+    "role_name_required": "Der Rollenname ist erforderlich.",
+    "session_id_required": "Ein Chat wird benötigt.",
+    "message_empty": "Die Nachricht ist leer.",
+    "unsupported_provider": "Für diesen Chat ist ein nicht unterstützter Anbieter konfiguriert.",
+    "daily_limit_reached": "Tägliches Token-Limit erreicht. Versuche es morgen erneut.",
+    "daily_output_limit_reached": "Tägliches Ausgabe-Token-Limit erreicht. Versuche es morgen erneut."
+  }
+}

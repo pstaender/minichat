@@ -62,13 +62,13 @@ $app->use(CORS::cors([
 $requireAuth = function (Context $context, callable $next) use ($config) {
     $userId = Auth::userId();
     if (!$userId) {
-        return $context->json(['error' => 'Unauthorized.'], 401);
+        return $context->json(['error' => 'Unauthorized.', 'code' => 'unauthorized'], 401);
     }
 
     $user = $config->findById($userId);
     if (!$user) {
         Auth::logout();
-        return $context->json(['error' => 'Unauthorized.'], 401);
+        return $context->json(['error' => 'Unauthorized.', 'code' => 'unauthorized'], 401);
     }
 
     $context->set('user', $user);
@@ -81,12 +81,12 @@ $app->post('/api/login', function (Context $context) use ($config, $usage) {
     $email = isset($body['email']) && trim((string) $body['email']) !== '' ? trim((string) $body['email']) : null;
 
     if ($password === '') {
-        return $context->json(['error' => 'Password is required.'], 400);
+        return $context->json(['error' => 'Password is required.', 'code' => 'password_required'], 400);
     }
 
     $user = $config->findByCredentials($email, $password);
     if (!$user) {
-        return $context->json(['error' => 'Invalid credentials.'], 401);
+        return $context->json(['error' => 'Invalid credentials.', 'code' => 'invalid_credentials'], 401);
     }
 
     Auth::login($user['id']);
@@ -115,12 +115,12 @@ $app->post('/api/sessions', function (Context $context) use ($sessions, $roles) 
 
     $model = (string) ($body['model'] ?? ($user['model'][0] ?? ''));
     if ($model === '' || !in_array($model, $user['model'], true)) {
-        return $context->json(['error' => 'Invalid model.'], 400);
+        return $context->json(['error' => 'Invalid model.', 'code' => 'invalid_model'], 400);
     }
 
     $roleId = isset($body['role_id']) && $body['role_id'] !== '' ? (string) $body['role_id'] : null;
     if ($roleId !== null && !$roles->get($user['id'], $roleId)) {
-        return $context->json(['error' => 'Role not found.'], 400);
+        return $context->json(['error' => 'Role not found.', 'code' => 'role_not_found'], 400);
     }
 
     $title = trim((string) ($body['title'] ?? '')) ?: 'New chat';
@@ -134,7 +134,7 @@ $app->get('/api/sessions/:id', function (Context $context) use ($sessions) {
     $session = $sessions->get($user['id'], (string) $context->req->param('id'));
 
     if (!$session) {
-        return $context->json(['error' => 'Session not found.'], 404);
+        return $context->json(['error' => 'Session not found.', 'code' => 'session_not_found'], 404);
     }
 
     return $context->json(['session' => $session]);
@@ -153,7 +153,7 @@ $app->patch('/api/sessions/:id', function (Context $context) use ($sessions) {
     });
 
     if (!$updated) {
-        return $context->json(['error' => 'Session not found.'], 404);
+        return $context->json(['error' => 'Session not found.', 'code' => 'session_not_found'], 404);
     }
 
     return $context->json(['session' => $updated]);
@@ -176,7 +176,7 @@ $app->post('/api/roles', function (Context $context) use ($roles) {
 
     $name = trim((string) ($body['name'] ?? ''));
     if ($name === '') {
-        return $context->json(['error' => 'Role name is required.'], 400);
+        return $context->json(['error' => 'Role name is required.', 'code' => 'role_name_required'], 400);
     }
 
     $prompt = trim((string) ($body['prompt'] ?? ''));
@@ -201,7 +201,7 @@ $app->patch('/api/roles/:id', function (Context $context) use ($roles) {
     });
 
     if (!$updated) {
-        return $context->json(['error' => 'Role not found.'], 404);
+        return $context->json(['error' => 'Role not found.', 'code' => 'role_not_found'], 404);
     }
 
     return $context->json(['role' => $updated]);
@@ -222,15 +222,15 @@ $app->post('/api/chat/stream', function (Context $context) use ($sessions, $usag
     $text = trim((string) ($body['text'] ?? ''));
 
     if ($sessionId === '') {
-        return $context->json(['error' => 'session_id is required.'], 400);
+        return $context->json(['error' => 'session_id is required.', 'code' => 'session_id_required'], 400);
     }
     if ($text === '') {
-        return $context->json(['error' => 'Message is empty.'], 400);
+        return $context->json(['error' => 'Message is empty.', 'code' => 'message_empty'], 400);
     }
 
     $session = $sessions->get($userId, $sessionId);
     if (!$session) {
-        return $context->json(['error' => 'Session not found.'], 404);
+        return $context->json(['error' => 'Session not found.', 'code' => 'session_not_found'], 404);
     }
 
     $limitError = $usage->checkLimit($user, $userId);
@@ -240,7 +240,7 @@ $app->post('/api/chat/stream', function (Context $context) use ($sessions, $usag
 
     $provider = resolveProvider($session['provider']);
     if (!$provider) {
-        return $context->json(['error' => 'Unsupported provider configured for this session.'], 400);
+        return $context->json(['error' => 'Unsupported provider configured for this session.', 'code' => 'unsupported_provider'], 400);
     }
 
     $userMessage = [

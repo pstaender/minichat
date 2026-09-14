@@ -21,6 +21,7 @@
     "@iconify-json/line-md": "^1.2.16",
     "dompurify": "^3.4.15",
     "marked": "^18.0.13",
+    "svelte-i18n": "^4.0.1",
     "turndown": "^7.2.4"
   }
 }

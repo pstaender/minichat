@@ -1,5 +1,6 @@
 <script>
   import { renderMarkdown } from '../lib/markdown.js'
+  import { _ } from '../lib/i18n.js'
 
   let { message } = $props()
 
@@ -12,7 +13,7 @@
       ? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900'
       : 'bg-emerald-600 text-white'}"
   >
-    {isUser ? 'You' : 'AI'}
+    {isUser ? $_('message.you') : $_('message.assistant')}
   </div>
 
   <div class="min-w-0 flex-1 pt-0.5">

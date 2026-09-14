@@ -1,5 +1,6 @@
 <script>
   import IconArrowUp from '~icons/line-md/arrow-up'
+  import { _ } from '../lib/i18n.js'
   import { textFromClipboard } from '../lib/paste.js'
 
   let { disabled, blocked, onSend } = $props()
@@ -67,19 +68,19 @@
       onkeydown={handleKeydown}
       disabled={disabled || !!blocked}
       rows="1"
-      placeholder="Send a message…"
+      placeholder={$_('composer.placeholder')}
       class="max-h-60 flex-1 resize-none bg-transparent text-sm leading-6 text-neutral-900 outline-none placeholder:text-neutral-400 disabled:opacity-50 dark:text-neutral-100"
     ></textarea>
     <button
       onclick={submit}
       disabled={disabled || !!blocked || !text.trim()}
       class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white transition disabled:opacity-30 dark:bg-neutral-100 dark:text-neutral-900"
-      aria-label="Send message"
+      aria-label={$_('composer.send')}
     >
       <IconArrowUp class="h-5 w-5" />
     </button>
   </div>
   <p class="mt-1.5 text-center text-[11px] text-neutral-400 dark:text-neutral-600">
-    Enter to send · Shift+Enter for a new line
+    {$_('composer.hint')}
   </p>
 </div>
