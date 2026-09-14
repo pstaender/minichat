@@ -27,21 +27,29 @@
     }
   }
 
+  // Most paste targets read text/plain, so the fallback flavor must be
+  // rendered plain text — not the Markdown source, or "Copy as HTML" would
+  // paste raw Markdown syntax (**bold**, # heading, ...) into them.
+  function htmlToPlainText(html) {
+    const el = document.createElement('div')
+    el.innerHTML = html
+    return el.textContent ?? ''
+  }
+
   async function copyHtml() {
     const html = renderMarkdown(message.text)
+    const plainText = htmlToPlainText(html)
     try {
-      // Writes both flavors so rich targets (email, docs) get formatting
-      // and plain-text targets fall back to the Markdown source.
       await navigator.clipboard.write([
         new ClipboardItem({
           'text/html': new Blob([html], { type: 'text/html' }),
-          'text/plain': new Blob([message.text], { type: 'text/plain' }),
+          'text/plain': new Blob([plainText], { type: 'text/plain' }),
         }),
       ])
       flashCopied('html')
     } catch {
       try {
-        await navigator.clipboard.writeText(html)
+        await navigator.clipboard.writeText(plainText)
         flashCopied('html')
       } catch {
         // clipboard truly unavailable — give up silently
