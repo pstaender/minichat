@@ -38,6 +38,10 @@ frontend.
   over-limit returns `429` and the UI disables the composer.
 - Multiple chats per user, rename/delete, paste HTML→Markdown (Turndown),
   markdown rendering (`marked` + `DOMPurify`).
+- Model can be changed per-chat any time via `PATCH /api/sessions/:id`
+  `{model}` (shares `resolveModel()` with session creation, in
+  `public/index.php`) — the ChatView header shows a `<select>` instead of
+  plain text once `auth.user.models.length > 1`.
 - Roles: a reusable name + rules text (e.g. escape-game rules), optionally
   attached to a session via `role_id`. The role's rules are prepended as a
   `system` message on every send (resolved live, not baked into the

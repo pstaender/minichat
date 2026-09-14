@@ -85,9 +85,19 @@
   }
 
   async function renameChat(id, title) {
-    await api.renameSession(id, title)
+    await api.updateSession(id, { title })
     sessions = sessions.map((s) => (s.id === id ? { ...s, title } : s))
     if (activeSession?.id === id) activeSession.title = title
+  }
+
+  async function changeSessionModel(model) {
+    if (!activeSession) return
+    const data = await api.updateSession(activeSession.id, { model })
+    activeSession.provider = data.session.provider
+    activeSession.model = data.session.model
+    sessions = sessions.map((s) =>
+      s.id === activeSession.id ? { ...s, provider: data.session.provider, model: data.session.model } : s
+    )
   }
 
   async function deleteChat(id) {
@@ -170,9 +180,11 @@
   <ChatView
     session={activeSession}
     {roles}
+    models={auth.user.models}
     {sending}
     {blocked}
     onSend={sendMessage}
+    onChangeModel={changeSessionModel}
     onToggleSidebar={() => (sidebarOpen = !sidebarOpen)}
   />
 </div>

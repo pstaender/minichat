@@ -55,6 +55,7 @@
   "chat": {
     "openSidebar": "Seitenleiste öffnen",
     "role": "Rolle",
+    "selectModel": "Modell",
     "emptyPrompt": "Stelle eine Frage, um die Unterhaltung zu beginnen.",
     "noSession": "Wähle einen Chat aus oder starte einen neuen."
   },

@@ -40,8 +40,7 @@ export const api = {
   createSession: (model, title, roleId = null) =>
     request('/sessions', { method: 'POST', body: JSON.stringify({ model, title, role_id: roleId }) }),
   getSession: (id) => request(`/sessions/${id}`),
-  renameSession: (id, title) =>
-    request(`/sessions/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }),
+  updateSession: (id, patch) => request(`/sessions/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   deleteSession: (id) => request(`/sessions/${id}`, { method: 'DELETE' }),
 
   listRoles: () => request('/roles'),

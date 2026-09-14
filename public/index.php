@@ -47,6 +47,36 @@ function resolveProvider(string $name): ?object
     };
 }
 
+/**
+ * Validates a model spec against a user's configured `models` list and
+ * resolves it to a provider + bare model name, checking that an API key
+ * is actually configured for that provider. Shared by session creation
+ * and changing a session's model.
+ *
+ * @return array{ok: true, provider: string, model: string}|array{ok: false, error: string, code: string}
+ */
+function resolveModel(array $user, string $modelSpec, Config $config): array
+{
+    if ($modelSpec === '' || !in_array($modelSpec, $user['models'], true)) {
+        return ['ok' => false, 'error' => 'Invalid model.', 'code' => 'invalid_model'];
+    }
+
+    $resolved = Config::parseModelSpec($modelSpec);
+    if (!$resolved['provider']) {
+        return [
+            'ok' => false,
+            'error' => "Could not determine a provider for model \"$modelSpec\". Prefix it, e.g. \"openai.$modelSpec\".",
+            'code' => 'model_provider_unresolved',
+        ];
+    }
+
+    if (!$config->apiKeyFor($user, $resolved['provider'])) {
+        return ['ok' => false, 'error' => 'No API key configured for this provider.', 'code' => 'missing_api_key'];
+    }
+
+    return ['ok' => true, 'provider' => $resolved['provider'], 'model' => $resolved['model']];
+}
+
 $app = new Dumbo();
 
 // Reflect the request origin and allow credentials so the cookie-based
@@ -114,19 +144,9 @@ $app->post('/api/sessions', function (Context $context) use ($sessions, $roles, 
     $body = $context->req->body();
 
     $modelSpec = (string) ($body['model'] ?? ($user['models'][0] ?? ''));
-    if ($modelSpec === '' || !in_array($modelSpec, $user['models'], true)) {
-        return $context->json(['error' => 'Invalid model.', 'code' => 'invalid_model'], 400);
-    }
-
-    $resolved = Config::parseModelSpec($modelSpec);
-    if (!$resolved['provider']) {
-        return $context->json([
-            'error' => "Could not determine a provider for model \"$modelSpec\". Prefix it, e.g. \"openai.$modelSpec\".",
-            'code' => 'model_provider_unresolved',
-        ], 400);
-    }
-    if (!$config->apiKeyFor($user, $resolved['provider'])) {
-        return $context->json(['error' => 'No API key configured for this provider.', 'code' => 'missing_api_key'], 400);
+    $resolved = resolveModel($user, $modelSpec, $config);
+    if (!$resolved['ok']) {
+        return $context->json(['error' => $resolved['error'], 'code' => $resolved['code']], 400);
     }
 
     $roleId = isset($body['role_id']) && $body['role_id'] !== '' ? (string) $body['role_id'] : null;
@@ -151,14 +171,27 @@ $app->get('/api/sessions/:id', function (Context $context) use ($sessions) {
     return $context->json(['session' => $session]);
 }, [$requireAuth]);
 
-$app->patch('/api/sessions/:id', function (Context $context) use ($sessions) {
+$app->patch('/api/sessions/:id', function (Context $context) use ($sessions, $config) {
     $user = $context->get('user');
     $body = $context->req->body();
     $id = (string) $context->req->param('id');
 
-    $updated = $sessions->update($user['id'], $id, function (array $s) use ($body) {
+    $modelChange = null;
+    if (isset($body['model'])) {
+        $resolved = resolveModel($user, (string) $body['model'], $config);
+        if (!$resolved['ok']) {
+            return $context->json(['error' => $resolved['error'], 'code' => $resolved['code']], 400);
+        }
+        $modelChange = $resolved;
+    }
+
+    $updated = $sessions->update($user['id'], $id, function (array $s) use ($body, $modelChange) {
         if (isset($body['title']) && trim((string) $body['title']) !== '') {
             $s['title'] = trim((string) $body['title']);
+        }
+        if ($modelChange) {
+            $s['provider'] = $modelChange['provider'];
+            $s['model'] = $modelChange['model'];
         }
         return $s;
     });

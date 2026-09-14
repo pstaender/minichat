@@ -55,6 +55,7 @@
   "chat": {
     "openSidebar": "Open sidebar",
     "role": "Role",
+    "selectModel": "Model",
     "emptyPrompt": "Ask anything to start the conversation.",
     "noSession": "Select or start a chat."
   },
