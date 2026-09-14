@@ -4,10 +4,12 @@ namespace Philipp\Minichat;
 
 /**
  * Reads chat_config.json (the list of users allowed to log in, their
- * provider/model choice, API key and token limits).
+ * available models, API keys and token limits).
  */
 class Config
 {
+    private const PROVIDERS = ['openai', 'anthropic'];
+
     /** @var array<int, array<string, mixed>> */
     private array $users;
 
@@ -32,8 +34,11 @@ class Config
         $u['email'] = $u['email'] ?? null;
         $u['id'] = (string) ($u['id'] ?? $u['email'] ?? '');
 
-        $models = $u['model'] ?? [];
-        $u['model'] = is_array($models) ? array_values(array_filter($models)) : array_filter([$models]);
+        $models = $u['models'] ?? [];
+        $u['models'] = is_array($models) ? array_values(array_filter($models)) : array_filter([$models]);
+
+        $apiKeys = $u['api_keys'] ?? [];
+        $u['api_keys'] = is_array($apiKeys) ? $apiKeys : [];
 
         $u['daily_token_limit'] = isset($u['daily_token_limit']) ? (int) $u['daily_token_limit'] : null;
 
@@ -42,6 +47,41 @@ class Config
         $u['daily_token_limit_output'] = $outputLimit !== null ? (int) $outputLimit : null;
 
         return $u;
+    }
+
+    /**
+     * Splits a model spec like "openai.gpt-5.6-luna" into its provider and
+     * bare model name. The provider prefix is optional — when absent (or
+     * unrecognized, e.g. a model name that itself contains a dot) the
+     * provider is guessed from the model name instead ("gpt..." -> openai,
+     * "claude..." -> anthropic).
+     *
+     * @return array{provider: ?string, model: string}
+     */
+    public static function parseModelSpec(string $spec): array
+    {
+        if (str_contains($spec, '.')) {
+            [$prefix, $rest] = explode('.', $spec, 2);
+            if (in_array($prefix, self::PROVIDERS, true)) {
+                return ['provider' => $prefix, 'model' => $rest];
+            }
+        }
+
+        return ['provider' => self::inferProvider($spec), 'model' => $spec];
+    }
+
+    private static function inferProvider(string $model): ?string
+    {
+        $lower = strtolower($model);
+
+        if (str_contains($lower, 'gpt')) {
+            return 'openai';
+        }
+        if (str_contains($lower, 'claude')) {
+            return 'anthropic';
+        }
+
+        return null;
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -86,13 +126,18 @@ class Config
         return null;
     }
 
+    public function apiKeyFor(array $user, string $provider): ?string
+    {
+        $key = $user['api_keys'][$provider] ?? null;
+        return is_string($key) && $key !== '' ? $key : null;
+    }
+
     public function publicUser(array $u): array
     {
         return [
             'id' => $u['id'],
             'email' => $u['email'],
-            'provider' => $u['provider'],
-            'model' => array_values($u['model']),
+            'models' => array_values($u['models']),
             'daily_token_limit' => $u['daily_token_limit'],
             'daily_token_limit_output' => $u['daily_token_limit_output'],
         ];

@@ -18,7 +18,12 @@ frontend.
 ## Storage & auth
 
 - No database. Config in `chat_config.json` (array of users: id, email?,
-  password, provider, model[], daily_token_limit(_output), API_KEY).
+  password, models[], daily_token_limit(_output), api_keys). No per-account
+  `provider` field — each entry in `models[]` is a bare or
+  `provider.`-prefixed model name, resolved per-model via
+  `Config::parseModelSpec()` (prefix wins; else guessed from the name: has
+  "gpt" → openai, "claude" → anthropic). `api_keys` maps provider name to
+  key, so one account can freely mix providers across its `models[]`.
 - Login state = native **PHP session** (`src/Auth.php`), not tokens/JWT.
 - Chat sessions, roles, and usage are plain JSON files under `storage/`
   (`SessionStore.php`, `RoleStore.php`, `Usage.php`), one file per user,

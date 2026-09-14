@@ -26,11 +26,13 @@ Edit `chat_config.json` at the project root — one entry per person:
   "id": "me@home.com",
   "email": "me@home.com",
   "password": "secret123",
-  "provider": "openai",
-  "model": ["gpt-5.6-sol", "gpt-5.6-luna"],
+  "models": ["gpt-5.6-sol", "gpt-5.6-luna", "anthropic.claude-haiku-4-5"],
   "daily_token_limit": 100000,
   "daily_token_limit_output": 20000,
-  "API_KEY": "sk-..."
+  "api_keys": {
+    "openai": "sk-...",
+    "anthropic": "sk-ant-..."
+  }
 }
 ```
 
@@ -39,8 +41,14 @@ Edit `chat_config.json` at the project root — one entry per person:
 - `email` is optional — leave it `null` for a password-only login. Login
   matches by password alone when no email is given, or by password *and*
   email when one is provided.
-- `provider` is either `"openai"` or `"anthropic"`; `model` is the list of
-  models that user is allowed to pick between.
+- `models` is the list of models this user can pick between — they can mix
+  providers freely in one account. Each entry is a model name, optionally
+  prefixed with its provider (`"openai."` or `"anthropic."`) when the name
+  alone doesn't make the provider obvious, e.g. `"openai.gpt-5.6-luna"`.
+  Without a prefix the provider is guessed from the name (containing `gpt`
+  → openai, `claude` → anthropic) — see `Config::parseModelSpec()`.
+- `api_keys` maps provider name (`openai` / `anthropic`) to that account's
+  API key for it. Only the providers actually used in `models` need a key.
 - `daily_token_limit` caps total (input + output) tokens per day;
   `daily_token_limit_output` additionally caps output tokens. Both reset at
   UTC midnight. Omit either (or set to `null`) to not enforce it.

@@ -46,7 +46,7 @@
   }
 
   async function newChat(roleId = null) {
-    const model = auth.user.model[0]
+    const model = auth.user.models[0]
     const data = await api.createSession(model, undefined, roleId)
     sessions = [{ ...data.session, message_count: 0 }, ...sessions]
     activeSession = data.session

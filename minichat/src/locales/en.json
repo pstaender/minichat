@@ -83,6 +83,8 @@
     "session_id_required": "A chat is required.",
     "message_empty": "Message is empty.",
     "unsupported_provider": "Unsupported provider configured for this session.",
+    "model_provider_unresolved": "Couldn't determine a provider for this model. Prefix it in chat_config.json, e.g. \"openai.<model>\".",
+    "missing_api_key": "No API key configured for this provider.",
     "daily_limit_reached": "Daily token limit reached. Try again tomorrow.",
     "daily_output_limit_reached": "Daily output token limit reached. Try again tomorrow."
   }

@@ -109,13 +109,24 @@ $app->get('/api/sessions', function (Context $context) use ($sessions) {
     return $context->json(['sessions' => $sessions->list($user['id'])]);
 }, [$requireAuth]);
 
-$app->post('/api/sessions', function (Context $context) use ($sessions, $roles) {
+$app->post('/api/sessions', function (Context $context) use ($sessions, $roles, $config) {
     $user = $context->get('user');
     $body = $context->req->body();
 
-    $model = (string) ($body['model'] ?? ($user['model'][0] ?? ''));
-    if ($model === '' || !in_array($model, $user['model'], true)) {
+    $modelSpec = (string) ($body['model'] ?? ($user['models'][0] ?? ''));
+    if ($modelSpec === '' || !in_array($modelSpec, $user['models'], true)) {
         return $context->json(['error' => 'Invalid model.', 'code' => 'invalid_model'], 400);
+    }
+
+    $resolved = Config::parseModelSpec($modelSpec);
+    if (!$resolved['provider']) {
+        return $context->json([
+            'error' => "Could not determine a provider for model \"$modelSpec\". Prefix it, e.g. \"openai.$modelSpec\".",
+            'code' => 'model_provider_unresolved',
+        ], 400);
+    }
+    if (!$config->apiKeyFor($user, $resolved['provider'])) {
+        return $context->json(['error' => 'No API key configured for this provider.', 'code' => 'missing_api_key'], 400);
     }
 
     $roleId = isset($body['role_id']) && $body['role_id'] !== '' ? (string) $body['role_id'] : null;
@@ -124,7 +135,7 @@ $app->post('/api/sessions', function (Context $context) use ($sessions, $roles) 
     }
 
     $title = trim((string) ($body['title'] ?? '')) ?: 'New chat';
-    $session = $sessions->create($user['id'], $user['provider'], $model, $title, $roleId);
+    $session = $sessions->create($user['id'], $resolved['provider'], $resolved['model'], $title, $roleId);
 
     return $context->json(['session' => $session], 201);
 }, [$requireAuth]);
@@ -213,7 +224,7 @@ $app->delete('/api/roles/:id', function (Context $context) use ($roles) {
     return $context->json(['ok' => true]);
 }, [$requireAuth]);
 
-$app->post('/api/chat/stream', function (Context $context) use ($sessions, $usage, $roles) {
+$app->post('/api/chat/stream', function (Context $context) use ($sessions, $usage, $roles, $config) {
     $user = $context->get('user');
     $userId = $user['id'];
     $body = $context->req->body();
@@ -241,6 +252,11 @@ $app->post('/api/chat/stream', function (Context $context) use ($sessions, $usag
     $provider = resolveProvider($session['provider']);
     if (!$provider) {
         return $context->json(['error' => 'Unsupported provider configured for this session.', 'code' => 'unsupported_provider'], 400);
+    }
+
+    $apiKey = $config->apiKeyFor($user, $session['provider']);
+    if (!$apiKey) {
+        return $context->json(['error' => 'No API key configured for this provider.', 'code' => 'missing_api_key'], 400);
     }
 
     $userMessage = [
@@ -273,7 +289,7 @@ $app->post('/api/chat/stream', function (Context $context) use ($sessions, $usag
 
     try {
         $usageResult = $provider->stream([
-            'apiKey' => $user['API_KEY'],
+            'apiKey' => $apiKey,
             'model' => $session['model'],
             'messages' => $providerMessages,
             'onDelta' => function (string $chunk) use (&$fullText) {
