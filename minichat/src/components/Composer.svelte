@@ -57,7 +57,7 @@
   {/if}
 
   <div
-    class="flex items-end gap-2 rounded-2xl border border-neutral-300 bg-white px-3 py-2 focus-within:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
+    class="flex items-center gap-2 rounded-2xl border border-neutral-300 bg-white px-3 py-2 focus-within:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
   >
     <textarea
       bind:this={textareaEl}
@@ -68,12 +68,12 @@
       disabled={disabled || !!blocked}
       rows="1"
       placeholder="Send a message…"
-      class="max-h-60 flex-1 resize-none bg-transparent py-1 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 disabled:opacity-50 dark:text-neutral-100"
+      class="max-h-60 flex-1 resize-none bg-transparent text-sm leading-6 text-neutral-900 outline-none placeholder:text-neutral-400 disabled:opacity-50 dark:text-neutral-100"
     ></textarea>
     <button
       onclick={submit}
       disabled={disabled || !!blocked || !text.trim()}
-      class="mb-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white transition disabled:opacity-30 dark:bg-neutral-100 dark:text-neutral-900"
+      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white transition disabled:opacity-30 dark:bg-neutral-100 dark:text-neutral-900"
       aria-label="Send message"
     >
       <IconArrowUp class="h-5 w-5" />
