@@ -5,9 +5,11 @@
   import Composer from './Composer.svelte'
   import Message from './Message.svelte'
 
-  let { session, sending, blocked, onSend, onToggleSidebar } = $props()
+  let { session, roles, sending, blocked, onSend, onToggleSidebar } = $props()
 
   let scrollEl = $state(null)
+
+  const role = $derived(roles.find((r) => r.id === session?.role_id) ?? null)
 
   $effect(() => {
     // re-run whenever the message list length or the last message's text changes
@@ -37,7 +39,7 @@
         {session?.title || 'New chat'}
       </p>
       <p class="truncate text-xs text-neutral-400 dark:text-neutral-500">
-        {auth.user?.provider} · {session?.model}
+        {#if role}Role: {role.name} · {/if}{auth.user?.provider} · {session?.model}
       </p>
     </div>
   </header>

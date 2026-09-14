@@ -86,6 +86,15 @@ Not applicable — this build has no file upload feature.
 - **Chats**: each user's conversations live in
   `storage/sessions/{user_id}.json`, one JSON blob with all sessions and
   their messages (`src/SessionStore.php`).
+- **Roles**: a reusable name + rules text a user defines once (e.g. the
+  rules of an escape game) and stored in `storage/roles/{user_id}.json`
+  (`src/RoleStore.php`). A chat session can optionally be scoped to a role
+  (`role_id`); the role's rules text is then prepended as a `system`
+  message on every send in that chat, so you can test-play a role across
+  as many chats as you like — see the role handling in
+  `POST /api/chat/stream` in `public/index.php`. The sidebar groups a
+  user's chats under their role, collapsible per role, with role-less
+  chats listed separately underneath.
 - **Usage**: `storage/usage/{user_id}.json` tracks today's input/output
   token counts (`src/Usage.php`). Checked before every send; once a limit
   is hit, `POST /api/chat/stream` returns `429` and the UI shows a banner
@@ -120,11 +129,13 @@ src/                      PHP backend (PSR-4: Philipp\Minichat\)
   Auth.php                Session-based login state
   Config.php              Reads chat_config.json
   SessionStore.php        Per-user chat sessions (storage/sessions/*.json)
+  RoleStore.php           Per-user roles/system-prompts (storage/roles/*.json)
   Usage.php               Per-user daily token accounting + limit checks
   Sse.php                 Minimal Server-Sent-Events emitter
   Providers/              OpenAI / Anthropic streaming clients
 storage/                  Runtime JSON data (git-ignored, except .gitkeep)
 minichat/                 Vite + Svelte 5 + Tailwind frontend
   src/lib/                api client, reactive auth store, markdown, paste
-  src/components/         LoginView, Sidebar, ChatView, Message, Composer
+  src/components/         LoginView, Sidebar, SessionRow, RoleEditor,
+                          ChatView, Message, Composer
 ```

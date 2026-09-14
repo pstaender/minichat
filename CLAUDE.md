@@ -20,9 +20,9 @@ frontend.
 - No database. Config in `chat_config.json` (array of users: id, email?,
   password, provider, model[], daily_token_limit(_output), API_KEY).
 - Login state = native **PHP session** (`src/Auth.php`), not tokens/JWT.
-- Chat sessions and usage are plain JSON files under `storage/`
-  (`SessionStore.php`, `Usage.php`), one file per user, written with
-  file-locked read-modify-write (`Json.php`).
+- Chat sessions, roles, and usage are plain JSON files under `storage/`
+  (`SessionStore.php`, `RoleStore.php`, `Usage.php`), one file per user,
+  written with file-locked read-modify-write (`Json.php`).
 
 ## Behavior
 
@@ -33,6 +33,11 @@ frontend.
   over-limit returns `429` and the UI disables the composer.
 - Multiple chats per user, rename/delete, paste HTML→Markdown (Turndown),
   markdown rendering (`marked` + `DOMPurify`).
+- Roles: a reusable name + rules text (e.g. escape-game rules), optionally
+  attached to a session via `role_id`. The role's rules are prepended as a
+  `system` message on every send (resolved live, not baked into the
+  session) — see the role lookup in `/api/chat/stream`. Sidebar groups
+  chats under their role, collapsible.
 - Icons: `line-md` via `unplugin-icons` (`~icons/line-md/...`), never
   emoji.
 - No file upload feature — explicitly removed, don't re-add it.

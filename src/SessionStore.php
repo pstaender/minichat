@@ -30,6 +30,7 @@ class SessionStore
             'title' => $s['title'],
             'provider' => $s['provider'],
             'model' => $s['model'],
+            'role_id' => $s['role_id'] ?? null,
             'created_at' => $s['created_at'],
             'updated_at' => $s['updated_at'],
             'message_count' => count($s['messages'] ?? []),
@@ -47,13 +48,19 @@ class SessionStore
         return null;
     }
 
-    public function create(string $userId, string $provider, string $model, string $title = 'New chat'): array
-    {
+    public function create(
+        string $userId,
+        string $provider,
+        string $model,
+        string $title = 'New chat',
+        ?string $roleId = null
+    ): array {
         $session = [
             'id' => bin2hex(random_bytes(8)),
             'title' => $title,
             'provider' => $provider,
             'model' => $model,
+            'role_id' => $roleId,
             'created_at' => gmdate('c'),
             'updated_at' => gmdate('c'),
             'messages' => [],

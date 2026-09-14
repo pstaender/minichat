@@ -9,6 +9,7 @@ use Philipp\Minichat\Auth;
 use Philipp\Minichat\Config;
 use Philipp\Minichat\Providers\AnthropicProvider;
 use Philipp\Minichat\Providers\OpenAIProvider;
+use Philipp\Minichat\RoleStore;
 use Philipp\Minichat\SessionStore;
 use Philipp\Minichat\Sse;
 use Philipp\Minichat\Usage;
@@ -18,6 +19,7 @@ $rootDir = dirname(__DIR__);
 $config = new Config($rootDir . '/chat_config.json');
 $usage = new Usage($rootDir . '/storage/usage');
 $sessions = new SessionStore($rootDir . '/storage/sessions');
+$roles = new RoleStore($rootDir . '/storage/roles');
 
 function resolveProviderMessages(array $messages): array
 {
@@ -29,7 +31,8 @@ function resolveProviderMessages(array $messages): array
             continue;
         }
 
-        $result[] = ['role' => $m['role'] === 'assistant' ? 'assistant' : 'user', 'text' => $text];
+        $role = in_array($m['role'], ['assistant', 'system'], true) ? $m['role'] : 'user';
+        $result[] = ['role' => $role, 'text' => $text];
     }
 
     return $result;
@@ -106,7 +109,7 @@ $app->get('/api/sessions', function (Context $context) use ($sessions) {
     return $context->json(['sessions' => $sessions->list($user['id'])]);
 }, [$requireAuth]);
 
-$app->post('/api/sessions', function (Context $context) use ($sessions) {
+$app->post('/api/sessions', function (Context $context) use ($sessions, $roles) {
     $user = $context->get('user');
     $body = $context->req->body();
 
@@ -115,8 +118,13 @@ $app->post('/api/sessions', function (Context $context) use ($sessions) {
         return $context->json(['error' => 'Invalid model.'], 400);
     }
 
+    $roleId = isset($body['role_id']) && $body['role_id'] !== '' ? (string) $body['role_id'] : null;
+    if ($roleId !== null && !$roles->get($user['id'], $roleId)) {
+        return $context->json(['error' => 'Role not found.'], 400);
+    }
+
     $title = trim((string) ($body['title'] ?? '')) ?: 'New chat';
-    $session = $sessions->create($user['id'], $user['provider'], $model, $title);
+    $session = $sessions->create($user['id'], $user['provider'], $model, $title, $roleId);
 
     return $context->json(['session' => $session], 201);
 }, [$requireAuth]);
@@ -157,7 +165,55 @@ $app->delete('/api/sessions/:id', function (Context $context) use ($sessions) {
     return $context->json(['ok' => true]);
 }, [$requireAuth]);
 
-$app->post('/api/chat/stream', function (Context $context) use ($sessions, $usage) {
+$app->get('/api/roles', function (Context $context) use ($roles) {
+    $user = $context->get('user');
+    return $context->json(['roles' => $roles->list($user['id'])]);
+}, [$requireAuth]);
+
+$app->post('/api/roles', function (Context $context) use ($roles) {
+    $user = $context->get('user');
+    $body = $context->req->body();
+
+    $name = trim((string) ($body['name'] ?? ''));
+    if ($name === '') {
+        return $context->json(['error' => 'Role name is required.'], 400);
+    }
+
+    $prompt = trim((string) ($body['prompt'] ?? ''));
+    $role = $roles->create($user['id'], $name, $prompt);
+
+    return $context->json(['role' => $role], 201);
+}, [$requireAuth]);
+
+$app->patch('/api/roles/:id', function (Context $context) use ($roles) {
+    $user = $context->get('user');
+    $body = $context->req->body();
+    $id = (string) $context->req->param('id');
+
+    $updated = $roles->update($user['id'], $id, function (array $r) use ($body) {
+        if (isset($body['name']) && trim((string) $body['name']) !== '') {
+            $r['name'] = trim((string) $body['name']);
+        }
+        if (isset($body['prompt'])) {
+            $r['prompt'] = trim((string) $body['prompt']);
+        }
+        return $r;
+    });
+
+    if (!$updated) {
+        return $context->json(['error' => 'Role not found.'], 404);
+    }
+
+    return $context->json(['role' => $updated]);
+}, [$requireAuth]);
+
+$app->delete('/api/roles/:id', function (Context $context) use ($roles) {
+    $user = $context->get('user');
+    $roles->delete($user['id'], (string) $context->req->param('id'));
+    return $context->json(['ok' => true]);
+}, [$requireAuth]);
+
+$app->post('/api/chat/stream', function (Context $context) use ($sessions, $usage, $roles) {
     $user = $context->get('user');
     $userId = $user['id'];
     $body = $context->req->body();
@@ -195,7 +251,15 @@ $app->post('/api/chat/stream', function (Context $context) use ($sessions, $usag
     ];
 
     $isFirstMessage = empty($session['messages']);
-    $providerMessages = resolveProviderMessages(array_merge($session['messages'] ?? [], [$userMessage]));
+
+    $history = $session['messages'] ?? [];
+    if (!empty($session['role_id'])) {
+        $role = $roles->get($userId, $session['role_id']);
+        if ($role && trim($role['prompt']) !== '') {
+            array_unshift($history, ['role' => 'system', 'text' => $role['prompt']]);
+        }
+    }
+    $providerMessages = resolveProviderMessages(array_merge($history, [$userMessage]));
 
     // Release the session file lock before the (potentially long) HTTP
     // stream so other tabs/requests for this user aren't blocked on it.

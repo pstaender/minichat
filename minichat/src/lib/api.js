@@ -37,12 +37,18 @@ export const api = {
   logout: () => request('/logout', { method: 'POST' }),
   me: () => request('/me'),
   listSessions: () => request('/sessions'),
-  createSession: (model, title) =>
-    request('/sessions', { method: 'POST', body: JSON.stringify({ model, title }) }),
+  createSession: (model, title, roleId = null) =>
+    request('/sessions', { method: 'POST', body: JSON.stringify({ model, title, role_id: roleId }) }),
   getSession: (id) => request(`/sessions/${id}`),
   renameSession: (id, title) =>
     request(`/sessions/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }),
   deleteSession: (id) => request(`/sessions/${id}`, { method: 'DELETE' }),
+
+  listRoles: () => request('/roles'),
+  createRole: (name, prompt) =>
+    request('/roles', { method: 'POST', body: JSON.stringify({ name, prompt }) }),
+  updateRole: (id, patch) => request(`/roles/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  deleteRole: (id) => request(`/roles/${id}`, { method: 'DELETE' }),
 }
 
 /**
