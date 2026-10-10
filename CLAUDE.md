@@ -75,3 +75,5 @@ installed.
 
 `composer start` (PHP on :8811, no timeout) + `cd minichat && npm run dev`
 (Vite proxies `/api` to :8811 — same-origin in dev, no CORS needed).
+
+<!--claude --resume 0743c1dd-0f7d-49f2-affd-9d4b39a76507-->

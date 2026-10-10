@@ -6,7 +6,7 @@ namespace Philipp\Minichat;
  * Stores each user's reusable "roles" (a name + a rules/system-prompt
  * text) in storage/roles/{user_id}.json. A chat session can be scoped to
  * a role so the role's prompt is applied to every message in that chat —
- * e.g. the rules of an escape game the user is building and test-playing.
+ * e.g. a Python tutor persona or the rules of a game.
  */
 class RoleStore
 {
