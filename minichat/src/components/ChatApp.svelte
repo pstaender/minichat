@@ -2,7 +2,8 @@
   import { onMount } from 'svelte'
   import IconClose from '~icons/line-md/close'
   import { api, streamChat } from '../lib/api.js'
-  import { _, apiErrorMessage } from '../lib/i18n.js'
+  import { get } from 'svelte/store'
+  import { _, apiErrorMessage, locale } from '../lib/i18n.js'
   import { auth } from '../lib/store.svelte.js'
   import ChatView from './ChatView.svelte'
   import RoleEditor from './RoleEditor.svelte'
@@ -71,6 +72,12 @@
       if (roleId) expandedRoles[roleId] = true
     } catch (e) {
       showActionError(e)
+      return
+    }
+
+    // Let the role introduce itself so the user knows who they're talking to.
+    if (roles.find((r) => r.id === roleId)?.prompt) {
+      await streamReply({ intro: true })
     }
   }
 
@@ -151,10 +158,17 @@
 
   async function sendMessage(text) {
     if (!activeSession) return
+    const userMsg = { id: `local-${Date.now()}`, role: 'user', text, created_at: new Date().toISOString() }
+    activeSession.messages = [...activeSession.messages, userMsg]
+    await streamReply({ text })
+  }
+
+  // Streams an assistant reply into the active session: either the answer
+  // to `text`, or (with `intro`) the role's opening self-introduction.
+  async function streamReply({ text, intro = false }) {
     const session = activeSession
     blocked = ''
 
-    const userMsg = { id: `local-${Date.now()}`, role: 'user', text, created_at: new Date().toISOString() }
     const assistantMsg = {
       id: `local-assistant-${Date.now()}`,
       role: 'assistant',
@@ -163,7 +177,7 @@
       created_at: new Date().toISOString(),
     }
 
-    session.messages = [...session.messages, userMsg, assistantMsg]
+    session.messages = [...session.messages, assistantMsg]
     // Index into the reactive array (not the plain `assistantMsg` object
     // above) so mutations go through Svelte's $state proxy and the UI
     // actually updates as chunks arrive.
@@ -171,7 +185,7 @@
     sending = true
 
     await streamChat(
-      { sessionId: session.id, text },
+      { sessionId: session.id, text, intro, locale: get(locale) },
       {
         onDelta: (chunk) => {
           session.messages[assistantIndex].text += chunk

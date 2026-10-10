@@ -82,6 +82,7 @@
   "error": {
     "loginFailed": "Login failed.",
     "network_error": "Network error. Is the server running?",
+    "intro_not_available": "This chat can't start with an introduction.",
     "password_required": "Password is required.",
     "invalid_credentials": "Invalid credentials.",
     "unauthorized": "Unauthorized.",

@@ -54,14 +54,14 @@ export const api = {
  * Sends a chat message and streams the assistant's reply. Uses fetch +
  * ReadableStream (not EventSource) because we need a POST body and cookies.
  */
-export async function streamChat({ sessionId, text }, { onDelta, onDone, onError } = {}) {
+export async function streamChat({ sessionId, text, intro = false, locale }, { onDelta, onDone, onError } = {}) {
   let res
   try {
     res = await fetch(`${BASE}/chat/stream`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, text }),
+      body: JSON.stringify({ session_id: sessionId, text, intro, locale }),
     })
   } catch {
     onError?.('Network error. Is the server running?', { code: 'network_error' })

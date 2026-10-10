@@ -82,6 +82,7 @@
   "error": {
     "loginFailed": "Anmeldung fehlgeschlagen.",
     "network_error": "Netzwerkfehler. Läuft der Server?",
+    "intro_not_available": "Dieser Chat kann nicht mit einer Vorstellung beginnen.",
     "password_required": "Passwort ist erforderlich.",
     "invalid_credentials": "Ungültige Zugangsdaten.",
     "unauthorized": "Nicht autorisiert.",

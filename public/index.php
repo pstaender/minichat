@@ -264,17 +264,27 @@ $app->post('/api/chat/stream', function (Context $context) use ($sessions, $usag
 
     $sessionId = (string) ($body['session_id'] ?? '');
     $text = trim((string) ($body['text'] ?? ''));
+    // An "intro" request has no user text: the assistant opens a fresh role
+    // chat by introducing itself, so the user knows who they're talking to.
+    $intro = !empty($body['intro']);
 
     if ($sessionId === '') {
         return $context->json(['error' => 'session_id is required.', 'code' => 'session_id_required'], 400);
     }
-    if ($text === '') {
+    if (!$intro && $text === '') {
         return $context->json(['error' => 'Message is empty.', 'code' => 'message_empty'], 400);
     }
 
     $session = $sessions->get($userId, $sessionId);
     if (!$session) {
         return $context->json(['error' => 'Session not found.', 'code' => 'session_not_found'], 404);
+    }
+
+    $role = !empty($session['role_id']) ? $roles->get($userId, $session['role_id']) : null;
+    $rolePrompt = $role ? trim($role['prompt']) : '';
+
+    if ($intro && ($rolePrompt === '' || !empty($session['messages']))) {
+        return $context->json(['error' => 'No introduction available for this chat.', 'code' => 'intro_not_available'], 400);
     }
 
     $limitError = $usage->checkLimit($user, $userId);
@@ -292,23 +302,34 @@ $app->post('/api/chat/stream', function (Context $context) use ($sessions, $usag
         return $context->json(['error' => 'No API key configured for this provider.', 'code' => 'missing_api_key'], 400);
     }
 
-    $userMessage = [
+    $language = match ($body['locale'] ?? '') {
+        'de' => 'German',
+        default => 'English',
+    };
+
+    // The intro instruction is only sent to the provider, never stored: the
+    // chat then simply starts with the assistant's greeting.
+    $userMessage = $intro ? null : [
         'id' => bin2hex(random_bytes(6)),
         'role' => 'user',
         'text' => $text,
         'created_at' => gmdate('c'),
     ];
+    $promptMessage = $userMessage ?? [
+        'role' => 'user',
+        'text' => "Introduce yourself to the user in one to three short sentences, staying in your role, so they know who they're talking to and what you can help with. Reply in $language.",
+    ];
 
-    $isFirstMessage = empty($session['messages']);
+    // Title the chat after the first *user* message (an intro greeting
+    // doesn't count).
+    $isFirstMessage = $userMessage !== null
+        && !array_filter($session['messages'] ?? [], fn(array $m) => $m['role'] === 'user');
 
     $history = $session['messages'] ?? [];
-    if (!empty($session['role_id'])) {
-        $role = $roles->get($userId, $session['role_id']);
-        if ($role && trim($role['prompt']) !== '') {
-            array_unshift($history, ['role' => 'system', 'text' => $role['prompt']]);
-        }
+    if ($rolePrompt !== '') {
+        array_unshift($history, ['role' => 'system', 'text' => $rolePrompt]);
     }
-    $providerMessages = resolveProviderMessages(array_merge($history, [$userMessage]));
+    $providerMessages = resolveProviderMessages(array_merge($history, [$promptMessage]));
 
     // Release the session file lock before the (potentially long) HTTP
     // stream so other tabs/requests for this user aren't blocked on it.
@@ -350,7 +371,9 @@ $app->post('/api/chat/stream', function (Context $context) use ($sessions, $usag
         $text
     ) {
         $s['messages'] = $s['messages'] ?? [];
-        $s['messages'][] = $userMessage;
+        if ($userMessage) {
+            $s['messages'][] = $userMessage;
+        }
         $s['messages'][] = $assistantMessage;
 
         if ($isFirstMessage && (empty($s['title']) || $s['title'] === 'New chat')) {
