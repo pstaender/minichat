@@ -26,7 +26,7 @@ Edit `chat_config.json` at the project root — one entry per person:
   "id": "me@home.com",
   "email": "me@home.com",
   "password": "secret123",
-  "models": ["gpt-5.6-sol", "gpt-5.6-luna", "anthropic.claude-haiku-4-5"],
+  "models": ["gpt-6-luna", "claude-haiku-4-5", "anthropic.claude-haiku-4-5"],
   "daily_token_limit": 100000,
   "daily_token_limit_output": 20000,
   "api_keys": {

@@ -1,0 +1,17 @@
+# Route all requests for non-existent files/directories to index.php
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If your app lives in a subfolder, set it here (e.g. /myapp/)
+    RewriteBase /
+
+    # Don't rewrite requests for index.php itself
+    RewriteRule ^index\.php$ - [L]
+
+    # Skip existing files and directories
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Send everything else to index.php, keeping the query string
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
