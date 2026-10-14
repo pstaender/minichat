@@ -7,6 +7,15 @@
 
   let text = $state('')
   let textareaEl = $state(null)
+  // Disabling the textarea while sending drops its focus; restore it afterwards.
+  let refocus = false
+
+  $effect(() => {
+    if (!disabled && !blocked && refocus && textareaEl) {
+      refocus = false
+      textareaEl.focus()
+    }
+  })
 
   function autoGrow(node) {
     const resize = () => {
@@ -38,6 +47,7 @@
     const value = text.trim()
     if (!value || disabled || blocked) return
     text = ''
+    refocus = true
     if (textareaEl) textareaEl.style.height = 'auto'
     onSend(value)
   }
