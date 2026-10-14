@@ -2,18 +2,26 @@
   import { onMount } from 'svelte'
   import IconClose from '~icons/line-md/close'
   import { api, streamChat } from '../lib/api.js'
+  import { chatEnabled, roleChatEnabled, shareableChatsEnabled } from '../lib/features.js'
   import { get } from 'svelte/store'
   import { _, apiErrorMessage, locale } from '../lib/i18n.js'
   import { auth } from '../lib/store.svelte.js'
   import ChatView from './ChatView.svelte'
+  import JoinChatForm from './JoinChatForm.svelte'
+  import Modal from './Modal.svelte'
   import RoleEditor from './RoleEditor.svelte'
+  import ShareCodeDialog from './ShareCodeDialog.svelte'
   import Sidebar from './Sidebar.svelte'
 
   let sessions = $state([])
   let roles = $state([])
   let expandedRoles = $state({})
   let editingRole = $state(null) // null | { id: null|string, name, prompt }
+  let joined = $state([]) // other users' chats this user joined by code
   let activeSession = $state(null)
+  let activeOwn = $state(true)
+  let shareCode = $state(null)
+  let joinOpen = $state(false)
   let sending = $state(false)
   let blocked = $state('')
   let sidebarOpen = $state(false)
@@ -42,12 +50,22 @@
   })
 
   onMount(async () => {
-    const [sessionsData, rolesData] = await Promise.all([api.listSessions(), api.listRoles()])
+    const [sessionsData, rolesData, sharedData] = await Promise.all([
+      api.listSessions(),
+      api.listRoles(),
+      shareableChatsEnabled ? api.listShared() : { sessions: [] },
+    ])
     sessions = sessionsData.sessions
     roles = rolesData.roles
-    if (sessions.length) {
-      await selectSession(sessions[0].id)
-    }
+    joined = sharedData.sessions
+    // open the most recent chat from a section the sidebar actually shows
+    const { byRole, ungrouped } = grouped
+    const visible = [
+      ...(roleChatEnabled ? Object.values(byRole).flat() : []),
+      ...(chatEnabled ? ungrouped : []),
+    ]
+    const first = sessions.find((s) => visible.includes(s))
+    if (first) await selectSession(first.id)
   })
 
   async function selectSession(id) {
@@ -56,6 +74,7 @@
     try {
       const data = await api.getSession(id)
       activeSession = data.session
+      activeOwn = data.own
     } catch (e) {
       showActionError(e)
     }
@@ -67,6 +86,7 @@
       const data = await api.createSession(model, undefined, roleId)
       sessions = [{ ...data.session, message_count: 0 }, ...sessions]
       activeSession = data.session
+      activeOwn = true
       blocked = ''
       sidebarOpen = false
       if (roleId) expandedRoles[roleId] = true
@@ -142,6 +162,37 @@
     }
   }
 
+  async function shareChat(id) {
+    try {
+      shareCode = (await api.shareSession(id)).code
+    } catch (e) {
+      showActionError(e)
+    }
+  }
+
+  function openJoin() {
+    sidebarOpen = false
+    joinOpen = true
+  }
+
+  // Errors are left to JoinChatForm, which shows them next to the code.
+  async function joinChat(code) {
+    const data = await api.join(code)
+    if (!data.own) joined = [data.session, ...joined.filter((s) => s.id !== data.session.id)]
+    joinOpen = false
+    await selectSession(data.session.id)
+  }
+
+  async function leaveChat(id) {
+    try {
+      await api.leaveShared(id)
+      joined = joined.filter((s) => s.id !== id)
+      if (activeSession?.id === id) activeSession = null
+    } catch (e) {
+      showActionError(e)
+    }
+  }
+
   async function deleteChat(id) {
     try {
       const wasActive = activeSession?.id === id
@@ -195,7 +246,9 @@
           auth.usage = payload.usage
           if (payload.title && payload.title !== session.title) {
             session.title = payload.title
-            sessions = sessions.map((s) => (s.id === session.id ? { ...s, title: payload.title } : s))
+            const retitle = (list) => list.map((s) => (s.id === session.id ? { ...s, title: payload.title } : s))
+            sessions = retitle(sessions)
+            joined = retitle(joined)
           }
         },
         onError: (message, payload) => {
@@ -217,6 +270,7 @@
     {roles}
     sessionsByRole={grouped.byRole}
     ungroupedSessions={grouped.ungrouped}
+    joinedSessions={joined}
     activeId={activeSession?.id}
     open={sidebarOpen}
     {expandedRoles}
@@ -224,16 +278,21 @@
     onNewChat={newChat}
     onRename={renameChat}
     onDelete={deleteChat}
+    onShare={shareableChatsEnabled ? shareChat : null}
+    onJoin={openJoin}
+    onLeave={leaveChat}
     onToggleRole={toggleRole}
     onNewRole={newRole}
     onEditRole={editRole}
     onDeleteRole={deleteRole}
     onToggle={() => (sidebarOpen = !sidebarOpen)}
   />
+  <!-- someone else's chat runs on their account: no model switching here -->
   <ChatView
     session={activeSession}
     {roles}
-    models={auth.user.models}
+    models={activeOwn ? auth.user.models : []}
+    shared={!activeOwn}
     {sending}
     {blocked}
     onSend={sendMessage}
@@ -241,6 +300,16 @@
     onToggleSidebar={() => (sidebarOpen = !sidebarOpen)}
   />
 </div>
+
+{#if shareCode}
+  <ShareCodeDialog code={shareCode} onClose={() => (shareCode = null)} />
+{/if}
+
+{#if joinOpen}
+  <Modal onClose={() => (joinOpen = false)}>
+    <JoinChatForm onJoin={joinChat} onCancel={() => (joinOpen = false)} autofocus />
+  </Modal>
+{/if}
 
 {#if editingRole}
   <RoleEditor role={editingRole} onSave={saveRole} onClose={() => (editingRole = null)} />

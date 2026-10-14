@@ -34,13 +34,17 @@
     "chats": "Chats",
     "noChats": "No chats yet.",
     "signOut": "Sign out",
-    "language": "Language"
+    "language": "Language",
+    "joinChat": "Join chat",
+    "joined": "Joined chats"
   },
   "session": {
     "rename": "Rename",
     "delete": "Delete",
     "confirmDelete": "Delete this chat? This cannot be undone.",
-    "untitled": "New chat"
+    "untitled": "New chat",
+    "share": "Share",
+    "leave": "Leave chat"
   },
   "role": {
     "editTitle": "Edit role",
@@ -60,7 +64,8 @@
     "role": "Role",
     "selectModel": "Model",
     "emptyPrompt": "Ask anything to start the conversation.",
-    "noSession": "Select or start a chat."
+    "noSession": "Select or start a chat.",
+    "shared": "Shared chat"
   },
   "composer": {
     "placeholder": "Send a message…",
@@ -79,6 +84,22 @@
     "copyHtmlLabel": "Copy response as HTML",
     "copied": "Copied!"
   },
+  "share": {
+    "title": "Share chat",
+    "description": "Anyone with this code can read and write in this chat — on your account and token limit. Sharing again creates a new code; the old one stops working and everyone who joined with it loses access.",
+    "copy": "Copy code",
+    "copied": "Copied!",
+    "close": "Close"
+  },
+  "join": {
+    "title": "Do you have a chat code?",
+    "description": "Enter it to join the chat.",
+    "codeLabel": "Chat code",
+    "charLabel": "Character {n} of 6",
+    "submit": "Join chat",
+    "joining": "Joining…",
+    "cancel": "Cancel"
+  },
   "error": {
     "loginFailed": "Login failed.",
     "network_error": "Network error. Is the server running?",
@@ -96,6 +117,8 @@
     "model_provider_unresolved": "Couldn't determine a provider for this model. Prefix it in chat_config.json, e.g. \"openai.<model>\".",
     "missing_api_key": "No API key configured for this provider.",
     "daily_limit_reached": "Daily token limit reached. Try again tomorrow.",
-    "daily_output_limit_reached": "Daily output token limit reached. Try again tomorrow."
+    "daily_output_limit_reached": "Daily output token limit reached. Try again tomorrow.",
+    "share_code_invalid": "Unknown or expired chat code.",
+    "sharing_disabled": "Sharing chats is disabled."
   }
 }

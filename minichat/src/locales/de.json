@@ -34,13 +34,17 @@
     "chats": "Chats",
     "noChats": "Noch keine Chats.",
     "signOut": "Abmelden",
-    "language": "Sprache"
+    "language": "Sprache",
+    "joinChat": "Chat beitreten",
+    "joined": "Beigetretene Chats"
   },
   "session": {
     "rename": "Umbenennen",
     "delete": "Löschen",
     "confirmDelete": "Diesen Chat löschen? Das kann nicht rückgängig gemacht werden.",
-    "untitled": "Neuer Chat"
+    "untitled": "Neuer Chat",
+    "share": "Teilen",
+    "leave": "Chat verlassen"
   },
   "role": {
     "editTitle": "Rolle bearbeiten",
@@ -60,7 +64,8 @@
     "role": "Rolle",
     "selectModel": "Modell",
     "emptyPrompt": "Stelle eine Frage, um die Unterhaltung zu beginnen.",
-    "noSession": "Wähle einen Chat aus oder starte einen neuen."
+    "noSession": "Wähle einen Chat aus oder starte einen neuen.",
+    "shared": "Geteilter Chat"
   },
   "composer": {
     "placeholder": "Nachricht schreiben…",
@@ -79,6 +84,22 @@
     "copyHtmlLabel": "Antwort als HTML kopieren",
     "copied": "Kopiert!"
   },
+  "share": {
+    "title": "Chat teilen",
+    "description": "Mit diesem Code kann jede Person diesen Chat lesen und darin schreiben – über dein Konto und dein Token-Limit. Erneutes Teilen erzeugt einen neuen Code; der alte wird ungültig und alle, die damit beigetreten sind, verlieren den Zugriff.",
+    "copy": "Code kopieren",
+    "copied": "Kopiert!",
+    "close": "Schließen"
+  },
+  "join": {
+    "title": "Hast du einen Chat-Code?",
+    "description": "Gib ihn ein, um dem Chat beizutreten.",
+    "codeLabel": "Chat-Code",
+    "charLabel": "Zeichen {n} von 6",
+    "submit": "Chat beitreten",
+    "joining": "Trete bei…",
+    "cancel": "Abbrechen"
+  },
   "error": {
     "loginFailed": "Anmeldung fehlgeschlagen.",
     "network_error": "Netzwerkfehler. Läuft der Server?",
@@ -96,6 +117,8 @@
     "model_provider_unresolved": "Für dieses Modell konnte kein Anbieter ermittelt werden. Setze in der chat_config.json ein Präfix, z. B. „openai.<Modell>“.",
     "missing_api_key": "Für diesen Anbieter ist kein API-Schlüssel konfiguriert.",
     "daily_limit_reached": "Tägliches Token-Limit erreicht. Versuche es morgen erneut.",
-    "daily_output_limit_reached": "Tägliches Ausgabe-Token-Limit erreicht. Versuche es morgen erneut."
+    "daily_output_limit_reached": "Tägliches Ausgabe-Token-Limit erreicht. Versuche es morgen erneut.",
+    "share_code_invalid": "Unbekannter oder abgelaufener Chat-Code.",
+    "sharing_disabled": "Das Teilen von Chats ist deaktiviert."
   }
 }

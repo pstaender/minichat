@@ -6,6 +6,7 @@
 /storage/usage/*.json
 /storage/sessions/*.json
 /storage/roles/*.json
+/storage/shares.json
 !/storage/usage/.gitkeep
 !/storage/sessions/.gitkeep
 !/storage/roles/.gitkeep

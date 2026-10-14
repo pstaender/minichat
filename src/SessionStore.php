@@ -25,7 +25,13 @@ class SessionStore
 
         usort($sessions, fn($a, $b) => strcmp($b['updated_at'], $a['updated_at']));
 
-        return array_map(fn($s) => [
+        return array_map(self::summary(...), $sessions);
+    }
+
+    /** Sidebar entry for a session, without its messages. */
+    public static function summary(array $s): array
+    {
+        return [
             'id' => $s['id'],
             'title' => $s['title'],
             'provider' => $s['provider'],
@@ -34,7 +40,7 @@ class SessionStore
             'created_at' => $s['created_at'],
             'updated_at' => $s['updated_at'],
             'message_count' => count($s['messages'] ?? []),
-        ], $sessions);
+        ];
     }
 
     public function get(string $userId, string $sessionId): ?array

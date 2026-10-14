@@ -7,10 +7,12 @@ use Dumbo\Dumbo;
 use Dumbo\Helpers\CORS;
 use Philipp\Minichat\Auth;
 use Philipp\Minichat\Config;
+use Philipp\Minichat\Json;
 use Philipp\Minichat\Providers\AnthropicProvider;
 use Philipp\Minichat\Providers\OpenAIProvider;
 use Philipp\Minichat\RoleStore;
 use Philipp\Minichat\SessionStore;
+use Philipp\Minichat\ShareStore;
 use Philipp\Minichat\Sse;
 use Philipp\Minichat\Usage;
 
@@ -20,6 +22,12 @@ $config = new Config($rootDir . '/chat_config.json');
 $usage = new Usage($rootDir . '/storage/usage');
 $sessions = new SessionStore($rootDir . '/storage/sessions');
 $roles = new RoleStore($rootDir . '/storage/roles');
+$shares = new ShareStore($rootDir . '/storage/shares.json');
+
+// Feature switches shared with the frontend (minichat/config.json): a value
+// is `true` or an options object, anything else means off.
+$features = Json::read($rootDir . '/minichat/config.json', []);
+$sharingEnabled = ($features['shareableChats'] ?? false) === true || is_array($features['shareableChats'] ?? null);
 
 function resolveProviderMessages(array $messages): array
 {
@@ -105,6 +113,31 @@ $requireAuth = function (Context $context, callable $next) use ($config) {
     return $next($context);
 };
 
+/**
+ * Finds a session the user may chat in: one of their own, or one they
+ * joined by code. `owner` is the account whose keys, limits and roles the
+ * chat runs on.
+ *
+ * @return array{owner: array, session: array, own: bool}|null
+ */
+$resolveChat = function (array $user, string $sessionId) use ($sessions, $shares, $config, $sharingEnabled): ?array {
+    if ($session = $sessions->get($user['id'], $sessionId)) {
+        return ['owner' => $user, 'session' => $session, 'own' => true];
+    }
+    if (!$sharingEnabled) {
+        return null;
+    }
+
+    $share = $shares->findJoined($user['id'], $sessionId);
+    if (!$share || $share['session_id'] !== $sessionId) {
+        return null;
+    }
+
+    $owner = $config->findById($share['user_id']);
+    $session = $owner ? $sessions->get($owner['id'], $sessionId) : null;
+    return $session ? ['owner' => $owner, 'session' => $session, 'own' => false] : null;
+};
+
 $app->post('/api/login', function (Context $context) use ($config, $usage) {
     $body = $context->req->body();
     $password = (string) ($body['password'] ?? '');
@@ -134,6 +167,64 @@ $app->get('/api/me', function (Context $context) use ($config, $usage) {
     return $context->json(['user' => $config->publicUser($user), 'usage' => $usage->get($user['id'])]);
 }, [$requireAuth]);
 
+$app->post('/api/join', function (Context $context) use ($config, $sessions, $shares, $sharingEnabled) {
+    $user = $context->get('user');
+    if (!$sharingEnabled) {
+        return $context->json(['error' => 'Sharing chats is disabled.', 'code' => 'sharing_disabled'], 403);
+    }
+
+    $code = ShareStore::normalize((string) ($context->req->body()['code'] ?? ''));
+    $share = $code !== '' ? $shares->find($code) : null;
+    $owner = $share ? $config->findById($share['user_id']) : null;
+    $session = $owner ? $sessions->get($owner['id'], $share['session_id']) : null;
+    if (!$session) {
+        return $context->json(['error' => 'Unknown chat code.', 'code' => 'share_code_invalid'], 404);
+    }
+
+    // Joining your own chat just opens it.
+    $own = $owner['id'] === $user['id'];
+    if (!$own) {
+        $shares->join($code, $user['id']);
+    }
+    return $context->json(['session' => SessionStore::summary($session), 'own' => $own]);
+}, [$requireAuth]);
+
+$app->get('/api/shared', function (Context $context) use ($config, $sessions, $shares, $sharingEnabled) {
+    $user = $context->get('user');
+    $result = [];
+
+    foreach ($sharingEnabled ? $shares->joinedBy($user['id']) : [] as $share) {
+        $owner = $config->findById($share['user_id']);
+        $session = $owner ? $sessions->get($owner['id'], $share['session_id']) : null;
+        if ($session) {
+            $result[] = SessionStore::summary($session);
+        }
+    }
+
+    usort($result, fn($a, $b) => strcmp($b['updated_at'], $a['updated_at']));
+    return $context->json(['sessions' => $result]);
+}, [$requireAuth]);
+
+$app->delete('/api/shared/:id', function (Context $context) use ($shares) {
+    $user = $context->get('user');
+    $shares->leave($user['id'], (string) $context->req->param('id'));
+    return $context->json(['ok' => true]);
+}, [$requireAuth]);
+
+$app->post('/api/sessions/:id/share', function (Context $context) use ($sessions, $shares, $sharingEnabled) {
+    if (!$sharingEnabled) {
+        return $context->json(['error' => 'Sharing chats is disabled.', 'code' => 'sharing_disabled'], 403);
+    }
+
+    $user = $context->get('user');
+    $id = (string) $context->req->param('id');
+    if (!$sessions->get($user['id'], $id)) {
+        return $context->json(['error' => 'Session not found.', 'code' => 'session_not_found'], 404);
+    }
+
+    return $context->json(['code' => $shares->create($user['id'], $id)]);
+}, [$requireAuth]);
+
 $app->get('/api/sessions', function (Context $context) use ($sessions) {
     $user = $context->get('user');
     return $context->json(['sessions' => $sessions->list($user['id'])]);
@@ -160,15 +251,14 @@ $app->post('/api/sessions', function (Context $context) use ($sessions, $roles, 
     return $context->json(['session' => $session], 201);
 }, [$requireAuth]);
 
-$app->get('/api/sessions/:id', function (Context $context) use ($sessions) {
-    $user = $context->get('user');
-    $session = $sessions->get($user['id'], (string) $context->req->param('id'));
+$app->get('/api/sessions/:id', function (Context $context) use ($resolveChat) {
+    $chat = $resolveChat($context->get('user'), (string) $context->req->param('id'));
 
-    if (!$session) {
+    if (!$chat) {
         return $context->json(['error' => 'Session not found.', 'code' => 'session_not_found'], 404);
     }
 
-    return $context->json(['session' => $session]);
+    return $context->json(['session' => $chat['session'], 'own' => $chat['own']]);
 }, [$requireAuth]);
 
 $app->patch('/api/sessions/:id', function (Context $context) use ($sessions, $config) {
@@ -203,9 +293,11 @@ $app->patch('/api/sessions/:id', function (Context $context) use ($sessions, $co
     return $context->json(['session' => $updated]);
 }, [$requireAuth]);
 
-$app->delete('/api/sessions/:id', function (Context $context) use ($sessions) {
+$app->delete('/api/sessions/:id', function (Context $context) use ($sessions, $shares) {
     $user = $context->get('user');
-    $sessions->delete($user['id'], (string) $context->req->param('id'));
+    $id = (string) $context->req->param('id');
+    $sessions->delete($user['id'], $id);
+    $shares->revoke($user['id'], $id);
     return $context->json(['ok' => true]);
 }, [$requireAuth]);
 
@@ -257,9 +349,7 @@ $app->delete('/api/roles/:id', function (Context $context) use ($roles) {
     return $context->json(['ok' => true]);
 }, [$requireAuth]);
 
-$app->post('/api/chat/stream', function (Context $context) use ($sessions, $usage, $roles, $config) {
-    $user = $context->get('user');
-    $userId = $user['id'];
+$app->post('/api/chat/stream', function (Context $context) use ($sessions, $usage, $roles, $config, $resolveChat) {
     $body = $context->req->body();
 
     $sessionId = (string) ($body['session_id'] ?? '');
@@ -275,10 +365,16 @@ $app->post('/api/chat/stream', function (Context $context) use ($sessions, $usag
         return $context->json(['error' => 'Message is empty.', 'code' => 'message_empty'], 400);
     }
 
-    $session = $sessions->get($userId, $sessionId);
-    if (!$session) {
+    $chat = $resolveChat($context->get('user'), $sessionId);
+    if (!$chat) {
         return $context->json(['error' => 'Session not found.', 'code' => 'session_not_found'], 404);
     }
+
+    // A shared chat runs entirely on its owner's account: their API keys,
+    // daily limits, roles and session file.
+    $session = $chat['session'];
+    $user = $chat['owner'];
+    $userId = $user['id'];
 
     $role = !empty($session['role_id']) ? $roles->get($userId, $session['role_id']) : null;
     $rolePrompt = $role ? trim($role['prompt']) : '';

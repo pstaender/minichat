@@ -52,6 +52,18 @@ frontend.
   `system` message on every send (resolved live, not baked into the
   session) — see the role lookup in `/api/chat/stream`. Sidebar groups
   chats under their role, collapsible.
+- Sidebar sections are toggled by `minichat/config.json` (read at build
+  time via `src/lib/features.js`): `chat` → "+ New Chat" + Chats list,
+  `roleChat` → Roles. Each is `true` or an object (for future options);
+  any truthy value enables it, missing/`false` hides it.
+- `shareableChats` (same file, also read by the backend, which enforces it):
+  owners generate a 6-char code per chat (`ShareStore.php`,
+  `storage/shares.json`; look-alike-free alphabet, shown as `AB3-C2D`).
+  Logged-in users join via "Join chat" in the sidebar — no guest access.
+  Joined chats run entirely on the owner's account (keys, limits, roles),
+  via `$resolveChat` in `public/index.php`; only GET session and
+  `/api/chat/stream` accept joiners, everything else stays owner-only.
+  Re-sharing replaces the code and drops everyone who joined with it.
 - Icons: `line-md` via `unplugin-icons` (`~icons/line-md/...`), never
   emoji.
 - No file upload feature — explicitly removed, don't re-add it.

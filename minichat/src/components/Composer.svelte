@@ -3,12 +3,18 @@
   import { _ } from '../lib/i18n.js'
   import { textFromClipboard } from '../lib/paste.js'
 
-  let { disabled, blocked, onSend } = $props()
+  let { sessionId, disabled, blocked, onSend } = $props()
 
   let text = $state('')
   let textareaEl = $state(null)
-  // Disabling the textarea while sending drops its focus; restore it afterwards.
-  let refocus = false
+  // Focus the textarea as soon as it's enabled: after entering a chat, and
+  // after sending (disabling it while sending drops its focus).
+  let refocus = $state(false)
+
+  $effect(() => {
+    void sessionId
+    refocus = true
+  })
 
   $effect(() => {
     if (!disabled && !blocked && refocus && textareaEl) {

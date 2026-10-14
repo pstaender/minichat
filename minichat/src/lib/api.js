@@ -42,6 +42,11 @@ export const api = {
   getSession: (id) => request(`/sessions/${id}`),
   updateSession: (id, patch) => request(`/sessions/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   deleteSession: (id) => request(`/sessions/${id}`, { method: 'DELETE' }),
+  shareSession: (id) => request(`/sessions/${id}/share`, { method: 'POST' }),
+
+  join: (code) => request('/join', { method: 'POST', body: JSON.stringify({ code }) }),
+  listShared: () => request('/shared'),
+  leaveShared: (id) => request(`/shared/${id}`, { method: 'DELETE' }),
 
   listRoles: () => request('/roles'),
   createRole: (name, prompt) =>

@@ -5,7 +5,8 @@
   import Composer from './Composer.svelte'
   import Message from './Message.svelte'
 
-  let { session, roles, models, sending, blocked, onSend, onChangeModel, onToggleSidebar } = $props()
+  // `shared`: someone else's chat, joined by code
+  let { session, roles, models, shared = false, sending, blocked, onSend, onChangeModel, onToggleSidebar } = $props()
 
   let scrollEl = $state(null)
 
@@ -66,6 +67,9 @@
       </p>
       {#if session}
         <div class="flex min-w-0 items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500">
+          {#if shared}
+            <span class="shrink-0">{$_('chat.shared')} ·</span>
+          {/if}
           {#if role}
             <span class="shrink-0">{$_('chat.role')}: {role.name} ·</span>
           {/if}
@@ -109,6 +113,6 @@
   </div>
 
   <div class="mx-auto w-full max-w-3xl">
-    <Composer disabled={!session || sending} {blocked} onSend={onSend} />
+    <Composer sessionId={session?.id} disabled={!session || sending} {blocked} onSend={onSend} />
   </div>
 </div>

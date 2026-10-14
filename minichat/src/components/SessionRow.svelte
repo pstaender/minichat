@@ -1,9 +1,13 @@
 <script>
   import IconEdit from '~icons/line-md/edit'
+  import IconLink from '~icons/line-md/link'
+  import IconLogOut from '~icons/line-md/log-out'
   import IconTrash from '~icons/line-md/trash'
   import { _ } from '../lib/i18n.js'
 
-  let { session, active, onSelect, onRename, onDelete } = $props()
+  // Own chats pass onRename/onDelete (and onShare when sharing is on);
+  // chats joined by code only pass onLeave.
+  let { session, active, onSelect, onRename = null, onDelete = null, onShare = null, onLeave = null } = $props()
 
   let renaming = $state(false)
   let value = $state('')
@@ -54,21 +58,45 @@
     >
       {session.title || $_('session.untitled')}
     </button>
-    <button
-      class="invisible flex shrink-0 items-center justify-center rounded p-1 text-neutral-400 hover:bg-neutral-300 hover:text-neutral-700 group-hover:visible dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
-      onclick={startRename}
-      title={$_('session.rename')}
-      aria-label={$_('session.rename')}
-    >
-      <IconEdit class="h-4 w-4" />
-    </button>
-    <button
-      class="invisible flex shrink-0 items-center justify-center rounded p-1 text-neutral-400 hover:bg-neutral-300 hover:text-red-600 group-hover:visible dark:hover:bg-neutral-700 dark:hover:text-red-400"
-      onclick={confirmDelete}
-      title={$_('session.delete')}
-      aria-label={$_('session.delete')}
-    >
-      <IconTrash class="h-4 w-4" />
-    </button>
+    {#if onShare}
+      <button
+        class="invisible flex shrink-0 items-center justify-center rounded p-1 text-neutral-400 hover:bg-neutral-300 hover:text-neutral-700 group-hover:visible dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
+        onclick={() => onShare(session.id)}
+        title={$_('session.share')}
+        aria-label={$_('session.share')}
+      >
+        <IconLink class="h-4 w-4" />
+      </button>
+    {/if}
+    {#if onRename}
+      <button
+        class="invisible flex shrink-0 items-center justify-center rounded p-1 text-neutral-400 hover:bg-neutral-300 hover:text-neutral-700 group-hover:visible dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
+        onclick={startRename}
+        title={$_('session.rename')}
+        aria-label={$_('session.rename')}
+      >
+        <IconEdit class="h-4 w-4" />
+      </button>
+    {/if}
+    {#if onDelete}
+      <button
+        class="invisible flex shrink-0 items-center justify-center rounded p-1 text-neutral-400 hover:bg-neutral-300 hover:text-red-600 group-hover:visible dark:hover:bg-neutral-700 dark:hover:text-red-400"
+        onclick={confirmDelete}
+        title={$_('session.delete')}
+        aria-label={$_('session.delete')}
+      >
+        <IconTrash class="h-4 w-4" />
+      </button>
+    {/if}
+    {#if onLeave}
+      <button
+        class="invisible flex shrink-0 items-center justify-center rounded p-1 text-neutral-400 hover:bg-neutral-300 hover:text-neutral-700 group-hover:visible dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
+        onclick={() => onLeave(session.id)}
+        title={$_('session.leave')}
+        aria-label={$_('session.leave')}
+      >
+        <IconLogOut class="h-4 w-4" />
+      </button>
+    {/if}
   {/if}
 </div>
