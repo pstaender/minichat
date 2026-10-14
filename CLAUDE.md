@@ -55,11 +55,11 @@ frontend.
 - Icons: `line-md` via `unplugin-icons` (`~icons/line-md/...`), never
   emoji.
 - No file upload feature — explicitly removed, don't re-add it.
-- i18n: English default, German second, via `svelte-i18n` (existing
+- i18n: German default, English second, via `svelte-i18n` (existing
   library, not hand-rolled) — `minichat/src/lib/i18n.js` registers
   `src/locales/{en,de}.json` with `addMessages` (sync, no lazy-loading
-  gate) and detects the initial locale from `navigator.language`, then
-  `localStorage` override. Every UI string goes through `$_('key')`; new
+  gate); the initial locale is the `localStorage` choice if set, else
+  German (`DEFAULT_LOCALE`) regardless of `navigator.language`. Every UI string goes through `$_('key')`; new
   strings need an entry in **both** locale files. Known backend error
   responses carry a `code` field precisely so the frontend can translate
   them (`apiErrorMessage()` in `i18n.js`) — add a `code` to any new

@@ -1,4 +1,4 @@
-import { _, addMessages, getLocaleFromNavigator, init, locale } from 'svelte-i18n'
+import { _, addMessages, init, locale } from 'svelte-i18n'
 import { get } from 'svelte/store'
 import de from '../locales/de.json'
 import en from '../locales/en.json'
@@ -8,17 +8,17 @@ addMessages('de', de)
 
 const STORAGE_KEY = 'minichat_locale'
 const SUPPORTED = ['en', 'de']
+const DEFAULT_LOCALE = 'de'
 
 function detectInitialLocale() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (SUPPORTED.includes(stored)) return stored
   } catch {
-    // localStorage unavailable (private browsing etc.) — fall through to detection
+    // localStorage unavailable (private browsing etc.) — fall through to the default
   }
 
-  const navLang = getLocaleFromNavigator()?.split('-')[0]
-  return SUPPORTED.includes(navLang) ? navLang : 'en'
+  return DEFAULT_LOCALE
 }
 
 init({ fallbackLocale: 'en', initialLocale: detectInitialLocale() })
