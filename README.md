@@ -5,6 +5,11 @@ Multiple people can log in with just a password (email is optional, purely
 for identifying who's who), each gets their own chats and a daily token
 budget defined in `chat_config.json`.
 
+> **Note:** this project is vibe-coded (written largely with an AI coding
+> assistant) and is mainly meant for educational purposes. Use it as a
+> learning resource or starting point rather than as production-ready,
+> security-audited software.
+
 - **Backend**: PHP, routed with [dumbo](https://github.com/notrab/dumbo).
   Login state lives in the native PHP session (cookie-based). Everything
   else (chat sessions, usage) is plain JSON files under `storage/` — no
@@ -128,16 +133,19 @@ Not applicable — this build has no file upload feature.
   `unplugin-icons` — imported per-icon (e.g. `~icons/line-md/plus`) and
   compiled to Svelte components at build time, so there's no runtime fetch
   from Iconify's API and no icon font.
-- **Language**: English by default, German as the second language, via
+- **Language**: German by default, English as the second language, via
   [svelte-i18n](https://github.com/kaisermann/svelte-i18n). The UI
-  language is detected from the browser's `navigator.language` on first
-  visit, then remembered in `localStorage` once changed with the EN/DE
+  language is remembered in `localStorage` once changed with the EN/DE
   toggle (in the sidebar, and on the login screen). Translations live in
   `minichat/src/locales/{en,de}.json`; the bootstrap in
   `minichat/src/lib/i18n.js` also translates known backend error codes
   (e.g. the daily-limit message) via `apiErrorMessage()` — errors without
   a `code` (like a raw provider API error) are shown as-is since they
   can't be pre-translated.
+
+## License
+
+[MIT](LICENSE)
 
 ## Project layout
 
