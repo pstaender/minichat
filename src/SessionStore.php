@@ -81,17 +81,22 @@ class SessionStore
         return $session;
     }
 
-    /** @param callable(array):array $mutator receives and returns the session array */
-    public function update(string $userId, string $sessionId, callable $mutator): ?array
+    /**
+     * @param callable(array):array $mutator receives and returns the session array
+     * @param bool $touch bump updated_at (moves the chat to the top of the sidebar)
+     */
+    public function update(string $userId, string $sessionId, callable $mutator, bool $touch = true): ?array
     {
         $result = null;
 
-        Json::update($this->path($userId), function ($data) use ($sessionId, $mutator, &$result) {
+        Json::update($this->path($userId), function ($data) use ($sessionId, $mutator, $touch, &$result) {
             $data['sessions'] = $data['sessions'] ?? [];
             foreach ($data['sessions'] as &$s) {
                 if ($s['id'] === $sessionId) {
                     $s = $mutator($s);
-                    $s['updated_at'] = gmdate('c');
+                    if ($touch) {
+                        $s['updated_at'] = gmdate('c');
+                    }
                     $result = $s;
                     break;
                 }

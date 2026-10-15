@@ -65,7 +65,10 @@
     "selectModel": "Modell",
     "emptyPrompt": "Stelle eine Frage, um die Unterhaltung zu beginnen.",
     "noSession": "Wähle einen Chat aus oder starte einen neuen.",
-    "shared": "Geteilter Chat"
+    "shared": "Geteilter Chat",
+    "pinned": "Angeheftet",
+    "expandPin": "Alles anzeigen",
+    "collapsePin": "Weniger anzeigen"
   },
   "composer": {
     "placeholder": "Nachricht schreiben…",
@@ -78,11 +81,11 @@
   "message": {
     "you": "Du",
     "assistant": "KI",
-    "copyMarkdown": "Markdown",
     "copyMarkdownLabel": "Antwort als Markdown kopieren",
-    "copyHtml": "HTML",
     "copyHtmlLabel": "Antwort als HTML kopieren",
-    "copied": "Kopiert!"
+    "copied": "Kopiert!",
+    "pin": "Oben anheften",
+    "unpin": "Lösen"
   },
   "share": {
     "title": "Chat teilen",
@@ -119,6 +122,7 @@
     "daily_limit_reached": "Tägliches Token-Limit erreicht. Versuche es morgen erneut.",
     "daily_output_limit_reached": "Tägliches Ausgabe-Token-Limit erreicht. Versuche es morgen erneut.",
     "share_code_invalid": "Unbekannter oder abgelaufener Chat-Code.",
-    "sharing_disabled": "Das Teilen von Chats ist deaktiviert."
+    "sharing_disabled": "Das Teilen von Chats ist deaktiviert.",
+    "message_not_found": "Nachricht nicht gefunden."
   }
 }

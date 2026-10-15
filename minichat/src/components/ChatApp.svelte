@@ -207,6 +207,20 @@
     }
   }
 
+  async function togglePin(messageId) {
+    const session = activeSession
+    const message = session?.messages.find((m) => m.id === messageId)
+    if (!message) return
+    const pinned = !message.pinned
+    message.pinned = pinned // optimistic
+    try {
+      await api.pinMessage(session.id, messageId, pinned)
+    } catch (e) {
+      message.pinned = !pinned
+      showActionError(e)
+    }
+  }
+
   async function sendMessage(text) {
     if (!activeSession) return
     const userMsg = { id: `local-${Date.now()}`, role: 'user', text, created_at: new Date().toISOString() }
@@ -243,6 +257,8 @@
         },
         onDone: (payload) => {
           sending = false
+          // swap the local id for the stored one, so the reply can be pinned
+          session.messages[assistantIndex].id = payload.message_id
           auth.usage = payload.usage
           if (payload.title && payload.title !== session.title) {
             session.title = payload.title
@@ -297,6 +313,7 @@
     {blocked}
     onSend={sendMessage}
     onChangeModel={changeSessionModel}
+    onTogglePin={togglePin}
     onToggleSidebar={() => (sidebarOpen = !sidebarOpen)}
   />
 </div>

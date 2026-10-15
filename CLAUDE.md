@@ -38,7 +38,11 @@ frontend.
   over-limit returns `429` and the UI disables the composer.
 - Multiple chats per user, rename/delete, paste HTML→Markdown (Turndown),
   markdown rendering (`marked` + `DOMPurify`).
-- Each assistant reply has copy buttons (`Message.svelte`): "Markdown"
+- Each assistant reply has icon-only buttons (`Message.svelte`, label as
+  `title` tooltip): pin, and two copy buttons. Pinning sets `pinned` on the
+  stored message (`PATCH /api/sessions/:id/messages/:messageId`, doesn't
+  bump `updated_at`); pinned replies show in a bar above the messages in
+  `ChatView.svelte`. "Markdown"
   copies the raw source via `writeText`; "HTML" writes both `text/html`
   (rendered via `renderMarkdown`) and a `text/plain` fallback with
   `navigator.clipboard.write([new ClipboardItem(...)])`, so rich targets

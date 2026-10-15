@@ -1,12 +1,20 @@
 <script>
   import { tick } from 'svelte'
+  import IconChevronDown from '~icons/line-md/chevron-down'
+  import IconClose from '~icons/line-md/close'
   import IconMenu from '~icons/line-md/menu'
+  import IconPinned from '~icons/line-md/arrow-up-square-twotone'
+  import { renderMarkdown } from '../lib/markdown.js'
   import { _ } from '../lib/i18n.js'
   import Composer from './Composer.svelte'
   import Message from './Message.svelte'
 
   // `shared`: someone else's chat, joined by code
-  let { session, roles, models, shared = false, sending, blocked, onSend, onChangeModel, onToggleSidebar } = $props()
+  let { session, roles, models, shared = false, sending, blocked, onSend, onChangeModel, onTogglePin, onToggleSidebar } =
+    $props()
+
+  const pinned = $derived(session?.messages.filter((m) => m.pinned) ?? [])
+  let expandedPins = $state({})
 
   let scrollEl = $state(null)
 
@@ -92,6 +100,44 @@
     </div>
   </header>
 
+  {#if pinned.length}
+    <div class="max-h-[40%] shrink-0 overflow-y-auto border-b border-neutral-200 dark:border-neutral-800">
+      <div class="mx-auto max-w-3xl space-y-1.5 px-4 py-2">
+        {#each pinned as message (message.id)}
+          {@const expanded = expandedPins[message.id]}
+          <div
+            class="flex items-start gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-900"
+          >
+            <IconPinned class="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" title={$_('chat.pinned')} />
+            <div
+              class="markdown min-w-0 flex-1 text-sm text-neutral-800 dark:text-neutral-200 {expanded
+                ? ''
+                : 'max-h-[4.5rem] overflow-hidden'}"
+            >
+              {@html renderMarkdown(message.text)}
+            </div>
+            <button
+              class="shrink-0 rounded p-1 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+              onclick={() => (expandedPins[message.id] = !expanded)}
+              title={expanded ? $_('chat.collapsePin') : $_('chat.expandPin')}
+              aria-label={expanded ? $_('chat.collapsePin') : $_('chat.expandPin')}
+            >
+              <IconChevronDown class="h-4 w-4 transition-transform {expanded ? 'rotate-180' : ''}" />
+            </button>
+            <button
+              class="shrink-0 rounded p-1 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+              onclick={() => onTogglePin(message.id)}
+              title={$_('message.unpin')}
+              aria-label={$_('message.unpin')}
+            >
+              <IconClose class="h-4 w-4" />
+            </button>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
   <div bind:this={scrollEl} class="flex-1 overflow-y-auto">
     {#if session}
       {#if session.messages.length === 0}
@@ -101,7 +147,7 @@
       {:else}
         <div class="mx-auto max-w-3xl divide-y divide-neutral-100 dark:divide-neutral-900">
           {#each session.messages as message (message.id)}
-            <Message {message} />
+            <Message {message} {onTogglePin} />
           {/each}
         </div>
       {/if}

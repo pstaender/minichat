@@ -65,7 +65,10 @@
     "selectModel": "Model",
     "emptyPrompt": "Ask anything to start the conversation.",
     "noSession": "Select or start a chat.",
-    "shared": "Shared chat"
+    "shared": "Shared chat",
+    "pinned": "Pinned",
+    "expandPin": "Show all",
+    "collapsePin": "Show less"
   },
   "composer": {
     "placeholder": "Send a message…",
@@ -78,11 +81,11 @@
   "message": {
     "you": "You",
     "assistant": "AI",
-    "copyMarkdown": "Markdown",
     "copyMarkdownLabel": "Copy response as Markdown",
-    "copyHtml": "HTML",
     "copyHtmlLabel": "Copy response as HTML",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "pin": "Pin to top",
+    "unpin": "Unpin"
   },
   "share": {
     "title": "Share chat",
@@ -119,6 +122,7 @@
     "daily_limit_reached": "Daily token limit reached. Try again tomorrow.",
     "daily_output_limit_reached": "Daily output token limit reached. Try again tomorrow.",
     "share_code_invalid": "Unknown or expired chat code.",
-    "sharing_disabled": "Sharing chats is disabled."
+    "sharing_disabled": "Sharing chats is disabled.",
+    "message_not_found": "Message not found."
   }
 }

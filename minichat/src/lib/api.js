@@ -42,6 +42,8 @@ export const api = {
   getSession: (id) => request(`/sessions/${id}`),
   updateSession: (id, patch) => request(`/sessions/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   deleteSession: (id) => request(`/sessions/${id}`, { method: 'DELETE' }),
+  pinMessage: (id, messageId, pinned) =>
+    request(`/sessions/${id}/messages/${messageId}`, { method: 'PATCH', body: JSON.stringify({ pinned }) }),
   shareSession: (id) => request(`/sessions/${id}/share`, { method: 'POST' }),
 
   join: (code) => request('/join', { method: 'POST', body: JSON.stringify({ code }) }),

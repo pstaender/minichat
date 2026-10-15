@@ -293,6 +293,36 @@ $app->patch('/api/sessions/:id', function (Context $context) use ($sessions, $co
     return $context->json(['session' => $updated]);
 }, [$requireAuth]);
 
+// Pin/unpin a message to the top of its chat. Open to everyone in the chat
+// (joiners too), like sending; doesn't reorder the sidebar.
+$app->patch('/api/sessions/:id/messages/:messageId', function (Context $context) use ($sessions, $resolveChat) {
+    $chat = $resolveChat($context->get('user'), (string) $context->req->param('id'));
+    if (!$chat) {
+        return $context->json(['error' => 'Session not found.', 'code' => 'session_not_found'], 404);
+    }
+
+    $messageId = (string) $context->req->param('messageId');
+    $pinned = !empty($context->req->body()['pinned']);
+    $found = false;
+
+    $sessions->update($chat['owner']['id'], $chat['session']['id'], function (array $s) use ($messageId, $pinned, &$found) {
+        foreach ($s['messages'] as &$m) {
+            if ($m['id'] === $messageId) {
+                $m['pinned'] = $pinned;
+                $found = true;
+            }
+        }
+        unset($m);
+        return $s;
+    }, touch: false);
+
+    if (!$found) {
+        return $context->json(['error' => 'Message not found.', 'code' => 'message_not_found'], 404);
+    }
+
+    return $context->json(['ok' => true]);
+}, [$requireAuth]);
+
 $app->delete('/api/sessions/:id', function (Context $context) use ($sessions, $shares) {
     $user = $context->get('user');
     $id = (string) $context->req->param('id');

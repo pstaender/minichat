@@ -2,12 +2,20 @@
   import IconClipboard from '~icons/line-md/clipboard'
   import IconClipboardCheck from '~icons/line-md/clipboard-check'
   import IconDocumentCode from '~icons/line-md/document-code'
+  import IconPin from '~icons/line-md/arrow-up-square'
+  import IconPinned from '~icons/line-md/arrow-up-square-twotone'
   import { _ } from '../lib/i18n.js'
   import { renderMarkdown } from '../lib/markdown.js'
 
-  let { message } = $props()
+  // onTogglePin is omitted where pinning isn't possible
+  let { message, onTogglePin = null } = $props()
 
   const isUser = $derived(message.role === 'user')
+  // replies still streaming only have a local id the server doesn't know yet
+  const canPin = $derived(onTogglePin && !message.id.startsWith('local-'))
+
+  const iconButton =
+    'flex items-center rounded p-1.5 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
 
   let copied = $state(null) // null | 'markdown' | 'html'
   let copiedTimer
@@ -91,35 +99,46 @@
     {/if}
 
     {#if !isUser && message.text}
-      <div class="mt-2 flex items-center gap-1">
+      <div class="mt-2 flex items-center gap-0.5">
         <button
-          class="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+          class={iconButton}
           onclick={copyMarkdown}
-          title={$_('message.copyMarkdownLabel')}
+          title={copied === 'markdown' ? $_('message.copied') : $_('message.copyMarkdownLabel')}
           aria-label={$_('message.copyMarkdownLabel')}
         >
           {#if copied === 'markdown'}
-            <IconClipboardCheck class="h-3.5 w-3.5" />
-            <span>{$_('message.copied')}</span>
+            <IconClipboardCheck class="h-4 w-4" />
           {:else}
-            <IconClipboard class="h-3.5 w-3.5" />
-            <span>{$_('message.copyMarkdown')}</span>
+            <IconClipboard class="h-4 w-4" />
           {/if}
         </button>
         <button
-          class="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+          class={iconButton}
           onclick={copyHtml}
-          title={$_('message.copyHtmlLabel')}
+          title={copied === 'html' ? $_('message.copied') : $_('message.copyHtmlLabel')}
           aria-label={$_('message.copyHtmlLabel')}
         >
           {#if copied === 'html'}
-            <IconClipboardCheck class="h-3.5 w-3.5" />
-            <span>{$_('message.copied')}</span>
+            <IconClipboardCheck class="h-4 w-4" />
           {:else}
-            <IconDocumentCode class="h-3.5 w-3.5" />
-            <span>{$_('message.copyHtml')}</span>
+            <IconDocumentCode class="h-4 w-4" />
           {/if}
         </button>
+        {#if canPin}
+          <button
+            class="{iconButton} {message.pinned ? 'text-neutral-700 dark:text-neutral-200' : ''}"
+            onclick={() => onTogglePin(message.id)}
+            title={message.pinned ? $_('message.unpin') : $_('message.pin')}
+            aria-label={message.pinned ? $_('message.unpin') : $_('message.pin')}
+            aria-pressed={!!message.pinned}
+          >
+            {#if message.pinned}
+              <IconPinned class="h-4 w-4" />
+            {:else}
+              <IconPin class="h-4 w-4" />
+            {/if}
+          </button>
+        {/if}
       </div>
     {/if}
   </div>
